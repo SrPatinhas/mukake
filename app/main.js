@@ -28,7 +28,7 @@ function createWindow() {
 function getFileList() {
   const fs = require("fs");
 
-  let dirlist = fs.readdirSync("D:\Musik");
+  let dirlist = fs.readdirSync("D:\\Musik");
 
   ipcMain.on('asynchronous-message', (event, arg) => {
     console.log(arg)  // prints "ping"
