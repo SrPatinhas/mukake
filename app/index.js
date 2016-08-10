@@ -1,43 +1,35 @@
-const {ipcRenderer} = require('electron')
-const react = require("react")
-const reactDOM = require("react-dom")
-
-let mySound;
-let progress;
-
-let Hello = react.createClass({
-  displayName: 'Hello',
-  render: function() {
-    return react.createElement("div", null, "Hello ", this.props.name);
-  }
+"use strict";
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var React = require('react');
+var ReactDOM = require('react-dom');
+var albumBox = React.createClass({
+    //displayName: "albumBox",
+    render: function () {
+        return (React.createElement("div", {className: "albumBox"}, "Hello,world! This is a albumBox."));
+    }
 });
-
+var AlbumEntry = (function (_super) {
+    __extends(AlbumEntry, _super);
+    function AlbumEntry(props) {
+        _super.call(this, props);
+    }
+    AlbumEntry.prototype.render = function () {
+        return (React.createElement("div", {className: "albumEntry"}, React.createElement("h2", {className: "albumAuthor"}, this.props.author), this.props.children));
+    };
+    return AlbumEntry;
+}(React.Component));
+var AlbumList = React.createClass({
+    //displayName: "albumList",
+    render: function () {
+        return (React.createElement("div", {className: "albumList"}, React.createElement(AlbumEntry, {author: "Foo Bar"}, "Album 1"), React.createElement(AlbumEntry, {author: "Spam Ham"}, "Album 2")));
+    }
+});
 document.addEventListener('DOMContentLoaded', function () {
-  progress = document.getElementById('myBar');
-  reactDOM.render(
-    react.createElement(Hello, {name: "World"}),
-    document.getElementById('container')
-  );
+    var progress = document.getElementById('myBar');
+    console.log("Master, I am ready!");
+    ReactDOM.render(React.createElement(AlbumList), document.getElementById('container'));
 });
-
-
-/*
-ipcRenderer.send('asynchronous-message', 'ping')
-ipcRenderer.on('asynchronous-reply', (event, arg) => {
-  console.log(arg) // prints "pong"
-})
-
-mySound = new Audio(["file://D:/Musik/ancora.webm"]);
-mySound.volume = 0.0;
-
-
-mySound.addEventListener('durationchange', (event) => {
-  progress.max = Math.floor(mySound.duration*1000)
-});
-
-mySound.addEventListener('timeupdate', (event) => {
-  progress.value = Math.floor(event.timeStamp);
-});
-
-mySound.play();
-*/
