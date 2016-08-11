@@ -14,6 +14,7 @@
       box-sizing: border-box;
       margin: 0;
       font-family: Open Sans;
+      font-size: 0.8em;
     }
 
     img {
@@ -26,6 +27,7 @@
     }
     .albumEntry {
       width: 4cm;
+      height: 6cm;
       padding: 2mm 2mm 1cm 2mm;
     }
     .albumEntry:hover {
@@ -35,7 +37,8 @@
       position: relative;
     }
     .albumEntry img {
-      width: 100%;
+      width: 4cm;
+      height: 4cm;
     }
     .albumControls {
       opacity: 0;
@@ -55,12 +58,17 @@
       padding: 5mm;
     }
 
-
+    .albumEntry .albumTitle,
+    .albumEntry .albumArtist {
+      overflow: hidden;
+      max-height: 5ex;
+      padding: 1mm 0 0 1mm;
+    }
     .albumEntry .albumTitle {
       font-size: 1.1em;
       font-weight: bold;
     }
-    .albumEntry .albumAlbum {
+    .albumEntry .albumArtist {
     }
 
     .playerIndicator {

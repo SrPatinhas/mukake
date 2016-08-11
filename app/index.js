@@ -6,6 +6,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var React = require('react');
 var ReactDOM = require('react-dom');
+var electron_1 = require('electron');
 var mockupTracks = [
     { artist: "Poets of the Fall", title: "Fire", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/01%20-%20Fire.mp3" },
     { artist: "Poets of the Fall", title: "Sorry go'round", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/02%20-%20Sorry%20go%20'round.mp3" }
@@ -42,14 +43,25 @@ var AlbumEntry = (function (_super) {
     }
     AlbumEntry.prototype.render = function () {
         var _this = this;
-        return (React.createElement("div", {className: "albumEntry"}, React.createElement("div", {className: "albumArtContainer"}, React.createElement("img", {src: this.props.album.art}), React.createElement("div", {className: "albumControls"}, React.createElement("div", {className: "albumControlsPlay", onClick: function () { return _this.props.playAlbum(_this.props.album); }}, React.createElement("i", {className: "fa fa-play", "aria-hidden": "true"})), React.createElement("div", {className: "albumControlsAdd"}, React.createElement("i", {className: "fa fa-plus", "aria-hidden": "true"})))), React.createElement("div", {className: "albumTitle"}, this.props.album.title), React.createElement("div", {className: "albumArtist"}, this.props.album.artist), this.props.children));
+        var dataurl = "album.png";
+        if (this.props.album.art) {
+            dataurl = "data:image/" + this.props.album.art.format + ";base64," + btoa(String.fromCharCode.apply(null, this.props.album.art.data));
+        }
+        return (React.createElement("div", {className: "albumEntry"}, React.createElement("div", {className: "albumArtContainer"}, React.createElement("img", {src: dataurl}), React.createElement("div", {className: "albumControls"}, React.createElement("div", {className: "albumControlsPlay", onClick: function () { return _this.props.playAlbum(_this.props.album); }}, React.createElement("i", {className: "fa fa-play", "aria-hidden": "true"})), React.createElement("div", {className: "albumControlsAdd"}, React.createElement("i", {className: "fa fa-plus", "aria-hidden": "true"})))), React.createElement("div", {className: "albumTitle"}, this.props.album.title), React.createElement("div", {className: "albumArtist"}, this.props.album.artist), this.props.children));
     };
     return AlbumEntry;
 }(React.Component));
 function AlbumList(props) {
-    return (React.createElement("div", {className: "albumList"}, mockupAlbumData.map(function (element) {
-        return React.createElement(AlbumEntry, {playAlbum: props.playAlbum, album: element});
-    })));
+    return (React.createElement("div", {className: "albumList"}, (function () {
+        if (props.library) {
+            return props.library.map(function (element) {
+                return React.createElement(AlbumEntry, {playAlbum: props.playAlbum, album: element});
+            });
+        }
+        else {
+            return React.createElement("div", null, "Loading...");
+        }
+    })()));
 }
 var PlayStatus;
 (function (PlayStatus) {
@@ -112,10 +124,19 @@ var MukakePlayer = (function (_super) {
     __extends(MukakePlayer, _super);
     function MukakePlayer() {
         _super.call(this);
-        this.state = { audioPlayer: new Audio(), audioState: PlayStatus.stop };
+        this.state = { audioPlayer: new Audio(), audioState: PlayStatus.stop, mainLibrary: null };
     }
+    MukakePlayer.prototype.componentDidMount = function () {
+        var _this = this;
+        electron_1.ipcRenderer.send('asynchronous-message', 'ping');
+        electron_1.ipcRenderer.on('asynchronous-reply', function (event, arg) {
+            var state = _this.state;
+            state.mainLibrary = arg;
+            _this.setState(state);
+        });
+    };
     MukakePlayer.prototype.render = function () {
-        return (React.createElement("div", null, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this)}), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this)})));
+        return (React.createElement("div", null, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this), library: this.state.mainLibrary}), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this)})));
     };
     MukakePlayer.prototype.playAlbum = function (item) {
         mockupPlaylist.items = [{ album: item }];

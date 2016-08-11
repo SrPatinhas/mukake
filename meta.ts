@@ -16,7 +16,7 @@ musicmetadata(fs.createReadStream("../library/"), (error, metadata) => {
             console.log(metadata);
         });
 */
-function recursiveReaddirSync(dir) {
+export function recursiveReaddirSync(dir) {
 
     let list = [];
     const files = fs.readdirSync(dir);
@@ -63,14 +63,14 @@ function musicmetadatawrapper(filename:string):Promise<any> {
     });
 }
 
-function buildLibrary(filelist) {
+export function buildLibrary(filelist) {
     return Promise.resolve().then(() => {
         let library = [];
         let albumByName = {}
         //filelist = [filelist[0]];
-        let promises = filelist.map(e => musicmetadatawrapper(e).catch((error) => null));
+        let promises = filelist.map(e => musicmetadatawrapper(path.resolve(e)).catch((error) => null));
         return Promise.all(promises).then((e:any) => {
-            for (let metadata of e {
+            for (let metadata of e) {
                 if (!metadata) {
                     continue;
                 }
@@ -78,7 +78,7 @@ function buildLibrary(filelist) {
                 if (metadata.album in albumByName) {
                     album = albumByName[metadata.album];
                 } else {
-                    album = {artist: metadata.album, title: metadata.album, art:metadata.picture[0], tracks: []};
+                    album = {artist: metadata.artist, title: metadata.album, art:metadata.picture[0], tracks: []};
                     library.push(album)
                     albumByName[album.title] = album;
                 }
@@ -89,6 +89,3 @@ function buildLibrary(filelist) {
         });
     });
 }
-
-buildLibrary(recursiveReaddirSync("library")).then(console.log)
-

@@ -1,34 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-
-let mockupTracks: Track[] = [
-    { artist: "Poets of the Fall", title: "Fire", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/01%20-%20Fire.mp3" },
-    { artist: "Poets of the Fall", title: "Sorry go'round", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/02%20-%20Sorry%20go%20'round.mp3" }
-]
-
-let mockupAlbumData: Album[] = [
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg", tracks: mockupTracks },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" },
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg" },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" },
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg" },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" }
-]
-
-
-let mockupPlaylist: Playlist = {
-    position: 0,
-    subposition: 0,
-    items: []
-}
-
-
+import {ipcRenderer} from 'electron';
 
 var albumBox = React.createClass({
     //displayName: "albumBox",
@@ -41,33 +13,49 @@ var albumBox = React.createClass({
     }
 });
 
-interface Track {
-    artist?: string;
+enum PlaylistRole {
+    collection,
+    album,
+    playlist,
+    queue,
+}
+
+interface PlaylistNode {
+    type: "playlist"|"track"
+}
+
+interface PlaylistItem {
+    playlist;
+    track;
+    album;
+}
+
+interface Playlist extends PlaylistNode {
+    role: PlaylistRole;
     title: string;
+    artist: string;
+    art?: any;
+    lastPlayed: number;
+    items: PlaylistItem;
+}
+
+interface Track extends PlaylistNode {
+    title: string;
+    artist: string;
+    composer: string;
     number: number;
     uri: string;
 }
 
-interface Album {
-    artist: string;
-    art?: string;
-    title: string;
-    tracks?: Track[];
+function isTrack(n: PlaylistNode): n is Track {
+    return n.type === "track";
 }
-
-interface PlaylistItem {
-    tracknumber?: number;
-    album?: Album;
-}
-
-interface Playlist {
-    position: number;
-    subposition: number;
-    items: PlaylistItem[];
+function isPlaylist(n: PlaylistNode): n is Playlist {
+    return n.type === "playlist";
 }
 
 interface AlbumEntryProps {
-    album: Album;
+    album: Playlist;
     playAlbum: any;
 }
 
@@ -77,10 +65,14 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
         super(props);
     }
     render() {
+        let dataurl = "album.png";
+        if (this.props.album.art) {
+            dataurl = "data:image/"+this.props.album.art.format+";base64,"+btoa(String.fromCharCode.apply(null, this.props.album.art.data));
+        }
         return (
             <div className="albumEntry">
                 <div className="albumArtContainer">
-                    <img src={this.props.album.art}></img>
+                    <img src={dataurl}></img>
                     <div className="albumControls">
                         <div className="albumControlsPlay" onClick={() => this.props.playAlbum(this.props.album)}><i className="fa fa-play" aria-hidden="true"></i></div>
                         <div className="albumControlsAdd"><i className="fa fa-plus" aria-hidden="true"></i></div>
@@ -97,9 +89,17 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
 function AlbumList(props) {
     return (
         <div className="albumList">
-            {mockupAlbumData.map((element) =>
-                <AlbumEntry playAlbum={props.playAlbum} album={element}></AlbumEntry>
-            ) }
+            {
+                (() => {
+                    if (props.library) {
+                        return props.library.map((element) =>
+                            <AlbumEntry playAlbum={props.playAlbum} album={element}></AlbumEntry>
+                        )
+                    } else {
+                        return <div>Loading...</div>;
+                    }
+                })()
+            }
         </div>
     );
 }
@@ -121,7 +121,7 @@ interface PlayerIndicatorProps {
 interface PlayerIndicatorState {
     currentTime: number;
     duration: number;
-    album: Album;
+    track: Track;
     position: number;
 }
 
@@ -129,7 +129,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
     state = {
             currentTime: 0,
             duration: 0,
-            album: undefined,
+            track: undefined,
             position: 0,
         };
 
@@ -202,6 +202,9 @@ interface MukakePlayerProps {
 interface MukakePlayerState {
     audioPlayer: HTMLAudioElement;
     audioState: PlayStatus;
+    mainLibrary: Playlist[];
+    currentPlaylist: Playlist;
+    playlistState: number[];
 }
 
 class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> {
@@ -209,23 +212,29 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
 
     constructor () {
         super()
-        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop}
+        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, mainLibrary: null, currentPlaylist: null, playlistState: [] }
+    }
+
+    componentDidMount () {
+        ipcRenderer.send('asynchronous-message', 'ping')
+        ipcRenderer.on('asynchronous-reply', (event, arg) => {
+            let state = this.state;
+            state.mainLibrary = arg;
+            this.setState(state);
+        });
     }
 
     render () {
         return (
             <div>
-                <AlbumList playAlbum={this.playAlbum.bind(this)}/>
+                <AlbumList playAlbum={this.playAlbum.bind(this)} library={this.state.mainLibrary}/>
                 <PlayerIndicator audioPlayer={this.state.audioPlayer} audioState={this.state.audioState} togglePlay={this.togglePlay.bind(this)}/>
             </div>
         );
     }
 
-    playAlbum(item: Album) {
-        mockupPlaylist.items = [{ album: item }];
-        mockupPlaylist.position = 0;
-        mockupPlaylist.subposition = 0;
-        this.state.audioPlayer.src = mockupPlaylist.items[0].album.tracks[0].uri;
+    playAlbum(item: Playlist) {
+        this.state.audioPlayer.src = item.items[0].uri;
         this.state.audioPlayer.play();
         this.state.audioState = PlayStatus.play;
         this.forceUpdate();

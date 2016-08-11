@@ -1,5 +1,6 @@
-const {app, BrowserWindow} = require('electron')
-const {ipcMain} = require('electron')
+import {app, BrowserWindow} from 'electron';
+import {ipcMain} from 'electron';
+import {recursiveReaddirSync, buildLibrary} from '../meta'
 
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -36,11 +37,24 @@ function getFileList() {
   })
 }
 
+function dispatcher() {
+  ipcMain.on('asynchronous-message', (event, arg) => {
+    buildLibrary(recursiveReaddirSync("library")).then((library) => {
+      event.sender.send('asynchronous-reply', library);
+    });
+  });
+}
+
+function libraryHelper() {
+  buildLibrary(recursiveReaddirSync("library")).then(console.log);
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow)
 app.on('ready', getFileList)
+app.on('ready', dispatcher);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
