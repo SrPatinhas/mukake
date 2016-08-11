@@ -6,11 +6,20 @@
   <title>Hello World!</title>
   <script src="index.js"></script>
   <link rel="stylesheet" href="css/font-awesome.css">
+  <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans" />
   <style>
     body {
       background: black;
       color: lightgray;
+      box-sizing: border-box;
+      margin: 0;
+      font-family: Open Sans;
     }
+
+    img {
+      display: block;
+    }
+
     .albumList {
       display: flex;
       flex-flow: row wrap;
@@ -52,6 +61,120 @@
       font-weight: bold;
     }
     .albumEntry .albumAlbum {
+    }
+
+    .playerIndicator {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      background: darkred;
+      padding: 2mm;
+    }
+    .playerIndicator > div {
+      width: 100%;
+    }
+
+    .playerIndicator .track {
+      flex: 0 0 8.25cm;
+      display: flex;
+      flex-wrap: nowrap;
+      border: 1px dotted black;
+    }
+    .playerIndicator .art {
+      width: 13mm;
+      border: 1px solid black;
+    }
+    .playerIndicator .art img {
+      width: 100%;
+    }
+    .playerIndicator .track .info {
+      padding-left: 3mm;
+    }
+    .playerIndicator .track .info div {
+      padding: .5mm 0 .5mm 0;
+      display: flex;
+      align-items: center;
+    }
+
+
+    .playerIndicator .progress {
+      width: 100%;
+      display: flex;
+      flex-wrap: nowrap;
+      padding: 0 2mm 0 2mm;
+      border: 1px dotted black;
+    }
+    .playerIndicator .progress .slider {
+      ;width: 100%;
+      display: flex;
+    }
+    .playerIndicator .progress .slider > input {
+      width: 100%;
+      margin: 0;
+    }
+    .playerIndicator .progress .currentTime {
+      padding-right: 3mm;
+      display: flex;
+      align-items: center;
+    }
+    .playerIndicator .progress .duration {
+      padding-left: 3mm;
+      display: flex;
+      align-items: center;
+    }
+
+
+    .playerIndicator .controls {
+      flex: 0 0 7cm;
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      border: 1px dotted black;
+      padding: 0 2mm 0 2mm;
+    }
+    .playerIndicator .controls .button {
+      padding: 0 4mm 0 4mm;
+      font-size: 1.2em;
+    }
+    .playerIndicator .controls .button:last-child {
+      padding: 0 0 0 4mm;
+    }
+
+    input[type=range] {
+	    -webkit-appearance: none;
+    	height: 10mm; /* pick your own value */
+	    padding: 0;
+    	/* your slider styles */
+      background: rgba(0,0,0,0);
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      box-sizing: border-box;
+      /* your thumb styles */
+      border: 0.7mm solid white;
+      border-radius: 5mm;
+      height: 5mm;
+      width: 5mm;
+      margin-top: -2.15mm;
+      background: darkred;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      /* your track styles */
+      width: 100%;
+      height: 0.5mm;
+      cursor: pointer;
+      background: white;
+      border-radius: 25px;
     }
   </style>
   </head>

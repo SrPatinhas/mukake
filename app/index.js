@@ -31,7 +31,7 @@ var mockupPlaylist = {
     items: []
 };
 function playAlbum(item) {
-    mockupPlaylist.items = [item];
+    mockupPlaylist.items = [{ album: item }];
     mockupPlaylist.position = 0;
     mockupPlaylist.subposition = 0;
     mySound.src = mockupPlaylist.items[0].album.tracks[0].uri;
@@ -71,16 +71,80 @@ var PlayerIndicator = (function (_super) {
     __extends(PlayerIndicator, _super);
     function PlayerIndicator() {
         _super.apply(this, arguments);
+        this.state = {
+            currentTime: 0,
+            duration: 0,
+            album: undefined,
+            position: 0,
+            playstate: PlayStatus.stop
+        };
     }
+    PlayerIndicator.prototype.componentDidMount = function () {
+        var _this = this;
+        /*mySound.addEventListener("timeupdate", (event: any) => {
+            let state = this.state;
+            state.currentTime = Math.floor(event.timeStamp/1000);
+            this.setState(state);
+        });*/
+        var f = function () {
+            window.requestAnimationFrame(f);
+            var state = _this.state;
+            if (Math.floor(mySound.currentTime) == state.currentTime)
+                return;
+            if (isNaN(mySound.currentTime))
+                return;
+            state.currentTime = Math.floor(mySound.currentTime);
+            console.log(state.currentTime);
+            _this.setState(state);
+        };
+        window.requestAnimationFrame(f);
+        mySound.addEventListener("durationchange", function (event) {
+            var state = _this.state;
+            state.duration = Math.floor(mySound.duration);
+            _this.setState(state);
+        });
+    };
+    PlayerIndicator.prototype.onPlayButton = function () {
+        var state = this.state;
+        switch (state.playstate) {
+            case PlayStatus.stop:
+            case PlayStatus.pause:
+                mySound.play();
+                state.playstate = PlayStatus.play;
+                break;
+            case PlayStatus.play:
+                mySound.pause();
+                state.playstate = PlayStatus.pause;
+                break;
+        }
+        this.setState(state);
+    };
+    PlayerIndicator.prototype.getPlayText = function () {
+        switch (this.state.playstate) {
+            case PlayStatus.play:
+                return (React.createElement("i", {className: "fa fa-pause", "aria-hidden": "true"}));
+            default:
+                return (React.createElement("i", {className: "fa fa-play", "aria-hidden": "true"}));
+        }
+    };
     PlayerIndicator.prototype.render = function () {
-        return (React.createElement("div", {className: "playerIndicator"}, React.createElement("div", {className: "track"}, React.createElement("div", {className: "art"}, React.createElement("img", {src: "http://placehold.it/300x300"})), React.createElement("div", {className: "info"}, React.createElement("div", {className: "track"}, "What's up?"), React.createElement("div", {className: "artist"}, "Four Non Blondes"))), React.createElement("div", {className: "progress"}, React.createElement("div", {className: "currentTime"}, "0:00"), React.createElement("input", {type: "range"}), React.createElement("div", {className: "duration"}, "0:00")), React.createElement("div", {className: "controls"}, React.createElement("div", {className: "previous"}, "Prev"), React.createElement("div", {className: "playStatus"}, "Play"), React.createElement("div", {className: "next"}, "Next"))));
+        var _this = this;
+        return (React.createElement("div", {className: "playerIndicator"}, React.createElement("div", {className: "track"}, React.createElement("div", {className: "art"}, React.createElement("img", {src: "http://placehold.it/300x300"})), React.createElement("div", {className: "info"}, React.createElement("div", {className: "title"}, "What's up?"), React.createElement("div", {className: "artist"}, "Four Non Blondes"))), React.createElement("div", {className: "progress"}, React.createElement("div", {className: "currentTime"}, Math.floor(this.state.currentTime / 60), ":", this.state.currentTime % 60 < 10 ? "0" + this.state.currentTime % 60 : this.state.currentTime % 60), React.createElement("input", {type: "range", className: "slider", max: this.state.duration, value: this.state.currentTime, onChange: function (event) { return (mySound.currentTime = event.target.value); }}), React.createElement("div", {className: "duration"}, Math.floor(this.state.duration / 60), ":", this.state.duration % 60 < 10 ? "0" + this.state.duration % 60 : this.state.duration % 60)), React.createElement("div", {className: "controls"}, React.createElement("div", {className: "previous button"}, React.createElement("i", {className: "fa fa-step-backward", "aria-hidden": "true"})), React.createElement("div", {className: "playStatus button", onClick: function () { _this.onPlayButton(); }}, this.getPlayText()), React.createElement("div", {className: "next button"}, React.createElement("i", {className: "fa fa-step-forward", "aria-hidden": "true"})), React.createElement("div", {className: "volume button"}, React.createElement("i", {className: "fa fa-volume-up", "aria-hidden": "true"})), React.createElement("div", {className: "repeat button"}, React.createElement("i", {className: "fa fa-repeat", "aria-hidden": "true"})), React.createElement("div", {className: "random button"}, React.createElement("i", {className: "fa fa-random", "aria-hidden": "true"})))));
     };
     return PlayerIndicator;
 }(React.Component));
+var myPlayerIndicator = React.createElement(PlayerIndicator, null);
+var starttime = (new Date).getTime();
 document.addEventListener('DOMContentLoaded', function () {
     var progress = document.getElementById('myBar');
     console.log("Master, I am ready!");
-    ReactDOM.render(React.createElement("div", null, React.createElement(AlbumList, null), React.createElement(PlayerIndicator, null)), document.getElementById('container'));
     mySound = new Audio();
-    mySound.volume = 1.0;
+    mySound.volume = 0.0;
+    /*
+    mySound.addEventListener("timeupdate", (event: any) => {
+            console.log(event.timeStamp/1000);
+            console.log(((new Date).getTime() - starttime)/1000);
+        });
+    */
+    ReactDOM.render(React.createElement("div", null, React.createElement(AlbumList, null), myPlayerIndicator), document.getElementById('container'));
 });
