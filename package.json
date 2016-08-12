@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "musicmetadata": "^2.0.4",
+    "react-desktop": "^0.2.11",
     "typescript": "^1.8.10"
   }
 }

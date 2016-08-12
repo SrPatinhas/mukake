@@ -236,8 +236,8 @@ var PlayerIndicator = (function (_super) {
     };
     PlayerIndicator.prototype.render = function () {
         var _this = this;
-        var title = "-/-";
-        var artist = "-/-";
+        var title = "";
+        var artist = "";
         var art = "album.png";
         if (this.props.queueState && this.props.queue && this.props.queue.items.length) {
             var node = navigateToTrack(this.props.queue, this.props.queueState);
@@ -253,12 +253,48 @@ var PlayerIndicator = (function (_super) {
     };
     return PlayerIndicator;
 }(React.Component));
+function MenuEntry(props) {
+    var state = "inactive";
+    if (props.viewState == ViewState[props.title]) {
+        state = "active";
+    }
+    return (React.createElement("div", {className: "menuEntry " + state}, React.createElement("img", {className: "entryArt", src: "album.png"}), React.createElement("div", {className: "entryText"}, props.title)));
+}
+var ViewState;
+(function (ViewState) {
+    ViewState[ViewState["albums"] = 0] = "albums";
+    ViewState[ViewState["artist"] = 1] = "artist";
+    ViewState[ViewState["song"] = 2] = "song";
+    ViewState[ViewState["playlist"] = 3] = "playlist";
+    ViewState[ViewState["settings"] = 4] = "settings";
+    ViewState[ViewState["queue"] = 5] = "queue";
+})(ViewState || (ViewState = {}));
+var MenuPane = (function (_super) {
+    __extends(MenuPane, _super);
+    function MenuPane() {
+        _super.apply(this, arguments);
+    }
+    MenuPane.prototype.render = function () {
+        var _this = this;
+        return (React.createElement("div", {className: "menuPane"}, Object.keys(this.props.collections).map(function (e) {
+            return React.createElement(MenuEntry, {viewState: _this.props.viewState, title: e, collection: _this.props.collections ? _this.props.collections[e] : null});
+        })));
+    };
+    return MenuPane;
+}(React.Component));
 var MukakePlayer = (function (_super) {
     __extends(MukakePlayer, _super);
     function MukakePlayer() {
         _super.call(this);
         var emptyQueue = { type: "playlist", role: types_1.PlaylistRole.playlist, title: "Current Playlist", artist: "Current User", items: [] };
-        this.state = { audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, queue: emptyQueue, queueState: [] };
+        this.state = {
+            audioPlayer: new Audio(),
+            audioState: PlayStatus.stop,
+            collections: { albums: null, artists: null, songs: null, playlists: null },
+            viewState: ViewState.albums,
+            queue: emptyQueue,
+            queueState: []
+        };
     }
     MukakePlayer.prototype.componentDidMount = function () {
         var _this = this;
@@ -270,7 +306,7 @@ var MukakePlayer = (function (_super) {
         });
     };
     MukakePlayer.prototype.render = function () {
-        return (React.createElement("div", null, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this), collection: this.state.collections}), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this), playerControl: this.playerControl.bind(this), queueState: this.state.queueState, queue: this.state.queue})));
+        return (React.createElement("div", {className: "windowRoot"}, React.createElement("div", {className: "windowLeftPane"}, React.createElement(MenuPane, {collections: this.state.collections, viewState: this.state.viewState})), React.createElement("div", {className: "windowRightPane"}, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this), collection: this.state.collections.albums})), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this), playerControl: this.playerControl.bind(this), queueState: this.state.queueState, queue: this.state.queue})));
     };
     MukakePlayer.prototype.playAlbum = function (item) {
         this.state.queue.items = [item];

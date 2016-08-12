@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
-import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
+import {Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
 function findRightmostLeaf(node: PlaylistNode): number[] {
     if (isTrack(node)) {
@@ -283,8 +283,8 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
 
     }
     render () {
-        var title: string = "-/-";
-        var artist: string = "-/-";
+        var title: string = "";
+        var artist: string = "";
         var art: string = "album.png";
         if (this.props.queueState && this.props.queue && this.props.queue.items.length) {
             let node:Track = navigateToTrack(this.props.queue, this.props.queueState);
@@ -325,26 +325,76 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
         )
     }
 }
-
-interface MukakePlayerProps {
-    
+interface MenuEntryProps {
+    collection: Playlist;
+    title: string;
+    viewState: ViewState;
+}
+function MenuEntry(props:MenuEntryProps) {
+    let state = "inactive";
+    if (props.viewState == ViewState[props.title]) {
+        state = "active";
+    }
+    return (
+        <div className={"menuEntry " + state}>
+            <img className="entryArt" src="album.png" ></img>
+            <div className="entryText">{props.title}</div>
+        </div>
+    );
 }
 
+enum ViewState {
+    albums,
+    artist,
+    song,
+    playlist,
+    settings,
+    queue,
+}
+interface MenuPaneProps {
+    collections: Collections;
+    viewState: ViewState;
+}
+class MenuPane extends React.Component<MenuPaneProps,any> {
+    render () {
+        return (
+            <div className="menuPane">
+                {Object.keys(this.props.collections).map( (e) =>
+                            <MenuEntry 
+                                viewState={this.props.viewState}
+                                title={e}
+                                collection={this.props.collections?this.props.collections[e]:null}
+                            />
+                        )}
+            </div>
+        );
+    }
+}
+
+interface MukakePlayerProps {
+}
 interface MukakePlayerState {
     audioPlayer: HTMLAudioElement;
     audioState: PlayStatus;
-    collections: Playlist;
+    collections: Collections;
     queue: Playlist;
     queueState: number[];
+    viewState: ViewState;
 }
-
 class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> {
     state:MukakePlayerState;
 
     constructor () {
         super()
         let emptyQueue:Playlist = {type: "playlist", role: PlaylistRole.playlist, title: "Current Playlist", artist:"Current User", items: []};
-        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, queue: emptyQueue, queueState: [] }
+        this.state = {
+            audioPlayer: new Audio(),
+            audioState: PlayStatus.stop,
+            collections: {albums: null, artists: null, songs: null, playlists: null},
+            viewState: ViewState.albums,
+            queue: emptyQueue,
+            queueState: []
+        }
     }
 
     componentDidMount () {
@@ -358,8 +408,13 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
 
     render () {
         return (
-            <div>
-                <AlbumList playAlbum={this.playAlbum.bind(this)} collection={this.state.collections}/>
+            <div className="windowRoot">
+                <div className="windowLeftPane">
+                    <MenuPane collections={this.state.collections} viewState={this.state.viewState}/>
+                </div>
+                <div className="windowRightPane">
+                    <AlbumList playAlbum={this.playAlbum.bind(this)} collection={this.state.collections.albums}/>
+                </div>
                 <PlayerIndicator 
                     audioPlayer={this.state.audioPlayer} 
                     audioState={this.state.audioState} 

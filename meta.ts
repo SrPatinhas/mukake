@@ -85,7 +85,7 @@ export function buildLibrary(filelist) {
                 let track:Track = {type: "track", artist:metadata.artist, title:metadata.title, number:metadata.track.no, uri:metadata.filename};
                 album.items.push(track);
             }
-            return library;
+            return {albums: library, artists: null, songs: null, playlists: null};
         });
     });
 }
