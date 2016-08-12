@@ -8,22 +8,94 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 var electron_1 = require('electron');
 var types_1 = require('./types');
-function navigateToPlaylistNode(playlist, playlistState) {
-    var iterate = function (node, depth) {
-        console.log("navstate:", playlistState);
-        console.log("navdepth:", depth);
-        console.log("navnode:", node);
-        if (depth < playlistState.length) {
-            if (isPlaylist(node)) {
-                return iterate(node.items[playlistState[depth]], ++depth);
+function findRightmostLeaf(node) {
+    if (isTrack(node)) {
+        return [];
+    }
+    if (isPlaylist(node)) {
+        var last = node.items.length - 1;
+        return [last].concat(findRightmostLeaf(node.items[last]));
+    }
+}
+function findLeftmostLeaf(node) {
+    if (isTrack(node)) {
+        return [];
+    }
+    if (isPlaylist(node)) {
+        return [0].concat(findRightmostLeaf(node.items[0]));
+    }
+}
+function navigateToPreviousTrack(playlist, state) {
+    var findPreviousTrack = function (node, state) {
+        var firstNode = node.items[state[0]];
+        if (isTrack(firstNode)) {
+            if ((state[0] - 1) >= 0) {
+                return [state[0] - 1].concat(findRightmostLeaf(node.items[state[0] - 1]));
             }
-            else {
+            return null;
+        }
+        if (isPlaylist(firstNode)) {
+            var result = findPreviousTrack(firstNode, state.slice(1));
+            if (result == null) {
                 return null;
             }
+            return [state[0]].concat(result);
         }
-        else {
-            return node;
+    };
+    return findPreviousTrack(playlist, state);
+}
+function navigateToNextTrack(playlist, state) {
+    var findNextTrack = function (node, state) {
+        var firstNode = node.items[state[0]];
+        if (isTrack(firstNode)) {
+            if ((state[0] + 1) < node.items.length) {
+                return [state[0] + 1].concat(findRightmostLeaf(node.items[state[0] + 1]));
+            }
+            return null;
         }
+        if (isPlaylist(firstNode)) {
+            var result = findNextTrack(firstNode, state.slice(1));
+            if (result == null) {
+                return null;
+            }
+            return [state[0]].concat(result);
+        }
+    };
+    return findNextTrack(playlist, state);
+}
+function navigateToNextTrack2(playlist, state) {
+    var findNextTrack = function (node, state, depth) {
+        state[state.length - depth]++;
+        var nextNode = navigateToPlaylistNode(node, state);
+        if (!nextNode) {
+            state[state.length - depth]--;
+            depth++;
+            state[state.length - depth]++;
+            return findNextTrack(node, state, depth);
+        }
+        if (isPlaylist(nextNode)) {
+            return navigateToFirstTrack(nextNode, state);
+        }
+        if (isTrack(nextNode)) {
+            return nextNode;
+        }
+        return null;
+    };
+    return findNextTrack(playlist, state, 1);
+}
+function navigateToPlaylistNode(playlist, playlistState) {
+    var iterate = function (node, depth) {
+        if (depth < playlistState.length) {
+            if (isPlaylist(node)) {
+                var index = playlistState[depth];
+                if (index < node.items.length) {
+                    return iterate(node.items[index], ++depth);
+                }
+                return null;
+            }
+            return null;
+        }
+        return node;
     };
     return iterate(playlist, 0);
 }
@@ -45,6 +117,18 @@ function navigateToFirstTrack(playlist, state) {
         if (isPlaylist(node)) {
             state.push(0);
             return iterate(node.items[0]);
+        }
+        if (isTrack(node)) {
+            return node;
+        }
+    };
+    return iterate(playlist);
+}
+function navigateToLastTrack(playlist, state) {
+    var iterate = function (node) {
+        if (isPlaylist(node)) {
+            state.push(node.items.length - 1);
+            return iterate(node.items[node.items.length - 1]);
         }
         if (isTrack(node)) {
             return node;
@@ -76,7 +160,6 @@ var AlbumEntry = (function (_super) {
 function AlbumList(props) {
     return (React.createElement("div", {className: "albumList"}, (function () {
         if (props.collection) {
-            console.log(props.collection);
             return props.collection.items.map(function (element) {
                 return React.createElement(AlbumEntry, {playAlbum: props.playAlbum, album: element});
             });
@@ -132,7 +215,6 @@ var PlayerIndicator = (function (_super) {
             if (isNaN(_this.props.audioPlayer.currentTime))
                 return;
             state.current = Math.floor(_this.props.audioPlayer.currentTime);
-            console.log(state.current);
             _this.setState(state);
         };
         window.requestAnimationFrame(f);
@@ -221,32 +303,27 @@ var MukakePlayer = (function (_super) {
         this.setState(state);
     };
     MukakePlayer.prototype.playerControl = function (action) {
+        var track;
+        var state = this.state;
+        var returnState;
         switch (action) {
             case PlayerControl.next:
-                var findNextTrack_1 = function (node, state, depth) {
-                    console.log("queue:", node);
-                    console.log("start:", state);
-                    console.log("depth:", depth);
-                    state[state.length - depth]++;
-                    console.log("new state:", state);
-                    var nextNode = navigateToPlaylistNode(node, state);
-                    console.log("new node", nextNode);
-                    if (!nextNode) {
-                        state[state.length - depth]--;
-                        depth++;
-                        state[state.length - depth]++;
-                        return findNextTrack_1(node, state, depth);
-                    }
-                    if (isPlaylist(nextNode)) {
-                        return navigateToFirstTrack(nextNode, state);
-                    }
-                    if (isTrack(nextNode)) {
-                        return nextNode;
-                    }
-                };
-                var track = findNextTrack_1(this.state.queue, this.state.queueState, 1);
-                this.playTrack(track);
+                returnState = navigateToNextTrack(this.state.queue, this.state.queueState);
+                break;
+            case PlayerControl.previous:
+                returnState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                break;
         }
+        console.log("returnState:", returnState);
+        if (returnState) {
+            state.queueState = returnState;
+            track = navigateToTrack(state.queue, state.queueState);
+            state.audioPlayer.src = track.uri;
+            if (state.audioState == PlayStatus.play) {
+                state.audioPlayer.play();
+            }
+        }
+        this.setState(state);
     };
     return MukakePlayer;
 }(React.Component));

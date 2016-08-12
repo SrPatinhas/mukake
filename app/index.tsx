@@ -3,11 +3,93 @@ import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
 import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
+function findRightmostLeaf(node: PlaylistNode): number[] {
+    if (isTrack(node)) {
+        return [];
+    }
+    if (isPlaylist(node)) {
+        let last = node.items.length - 1;
+        return [last].concat(findRightmostLeaf(node.items[last]))
+    }
+}
+function findLeftmostLeaf(node: PlaylistNode): number[] {
+    if (isTrack(node)) {
+        return [];
+    }
+    if (isPlaylist(node)) {
+        return [0].concat(findRightmostLeaf(node.items[0]))
+    }
+}
+
+function navigateToPreviousTrack(playlist: Playlist, state: number[]): number[] {
+    let findPreviousTrack = (node: Playlist, state: number[]) => {
+       let firstNode = node.items[state[0]];
+        if (isTrack(firstNode)) {
+            if ((state[0] - 1) >= 0) {
+                return [state[0]-1].concat(findRightmostLeaf(node.items[state[0]-1])); 
+            }
+            return null;
+        }
+        if (isPlaylist(firstNode)) {
+            let result = findPreviousTrack(firstNode, state.slice(1));
+            if (result == null) {
+                return null
+            }
+            return [state[0]].concat(result);
+        }
+    }
+    return findPreviousTrack(playlist, state);
+}
+function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
+    let findNextTrack = (node: Playlist, state: number[]): number[]  => {
+        let firstNode = node.items[state[0]];
+        if (isTrack(firstNode)) {
+            if ((state[0] + 1) < node.items.length) {
+                return [state[0]+1].concat(findRightmostLeaf(node.items[state[0]+1]));
+            }
+            return null;
+        }
+        if (isPlaylist(firstNode)) {
+            let result = findNextTrack(firstNode, state.slice(1));
+            if (result == null) {
+                return null
+            }
+            return [state[0]].concat(result);
+        }
+    }
+    return findNextTrack(playlist, state);
+}
+
+function navigateToNextTrack2(playlist: Playlist, state: number[]): Track {
+    let findNextTrack = (node: Playlist, state: number[], depth: number) => {
+        state[state.length-depth]++;
+        let nextNode = navigateToPlaylistNode(node, state);
+        if (! nextNode) {
+            state[state.length-depth]--;
+            depth++;
+            state[state.length-depth]++;
+            return findNextTrack(node, state, depth);
+        }
+        if( isPlaylist(nextNode)) {
+            return navigateToFirstTrack(nextNode, state);
+        }
+        if( isTrack(nextNode)) {
+            return nextNode;
+        }
+        return null;
+    }
+    return findNextTrack(playlist, state, 1);
+}
+
 function navigateToPlaylistNode(playlist: Playlist, playlistState: number[]): PlaylistNode {
     let iterate = (node:PlaylistNode, depth:number):PlaylistNode => {
         if (depth < playlistState.length) {
             if(isPlaylist(node)) {
-                return iterate(node.items[playlistState[depth]], ++depth);
+                let index = playlistState[depth];
+                if ( index < node.items.length) {
+                    return iterate(node.items[index], ++depth);
+                }
+                return null;
             }
             return null;
         }
@@ -29,11 +111,25 @@ function navigateToTrack(playlist: Playlist, playlistState: number[]): Track {
     let track:Track = iterate(playlist,0);
     return track;
 }
+
 function navigateToFirstTrack(playlist: PlaylistNode, state: number[]): Track {
     let iterate = (node:PlaylistNode):Track => {
         if(isPlaylist(node)) {
             state.push(0);
             return iterate(node.items[0]);
+        }
+        if(isTrack(node)) {
+            return node;
+        }
+    }
+    return iterate(playlist);
+}
+
+function navigateToLastTrack(playlist: PlaylistNode, state: number[]): Track {
+    let iterate = (node:PlaylistNode):Track => {
+        if(isPlaylist(node)) {
+            state.push(node.items.length - 1);
+            return iterate(node.items[node.items.length - 1]);
         }
         if(isTrack(node)) {
             return node;
@@ -92,7 +188,6 @@ function AlbumList(props:AlbumListProps) {
             {
                 (() => {
                     if (props.collection) {
-                        console.log(props.collection);
                         return props.collection.items.map((element:Playlist) =>
                             <AlbumEntry playAlbum={props.playAlbum} album={element}></AlbumEntry>
                         )
@@ -165,7 +260,6 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
             if ( Math.floor(this.props.audioPlayer.currentTime) == state.current) return;
             if ( isNaN(this.props.audioPlayer.currentTime) ) return;
             state.current = Math.floor(this.props.audioPlayer.currentTime);
-            console.log(state.current);
             this.setState(state);
         };
         window.requestAnimationFrame(f);
@@ -312,32 +406,27 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
     }
 
     playerControl(action: PlayerControl) {
+        let track: Track;
+        let state = this.state;
+        let returnState;
         switch(action) {
             case PlayerControl.next:
-                let findNextTrack = (node: Playlist, state: number[], depth: number) => {
-                    console.log("queue:", node);
-                    console.log("start:", state);
-                    console.log("depth:", depth);
-                    state[state.length-depth]++;
-                    console.log("new state:", state);
-                    let nextNode = navigateToPlaylistNode(node, state);
-                    console.log("new node", nextNode);
-                    if (! nextNode) {
-                        state[state.length-depth]--;
-                        depth++;
-                        state[state.length-depth]++;
-                        return findNextTrack(node, state, depth);
-                    }
-                    if( isPlaylist(nextNode)) {
-                        return navigateToFirstTrack(nextNode, state);
-                    }
-                    if( isTrack(nextNode)) {
-                        return nextNode;
-                    }
-                }
-                let track: Track = findNextTrack(this.state.queue, this.state.queueState, 1);
-                this.playTrack(track);
+                returnState = navigateToNextTrack(this.state.queue, this.state.queueState);
+                break;
+            case PlayerControl.previous:
+                returnState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                break;
             }
+        console.log("returnState:", returnState);
+        if (returnState) {
+            state.queueState = returnState;
+            track = navigateToTrack(state.queue, state.queueState);
+            state.audioPlayer.src = track.uri;
+            if (state.audioState == PlayStatus.play) {
+                state.audioPlayer.play();
+            }
+        }
+        this.setState(state);
         }
 }
 
