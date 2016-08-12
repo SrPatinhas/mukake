@@ -44,13 +44,13 @@ interface Album {
 
 function musicmetadatawrapper(filename:string):Promise<any> {
     return new Promise((resolve,reject) => {
-        console.log("Promise was called.", filename)
         musicmetadata(fs.createReadStream(filename), (error, metadata) => {
             if (error) {
                 reject(error);
                 return;
             }
             metadata.filename = filename;
+            console.log(metadata);
             resolve(metadata);
         });
     });
@@ -67,11 +67,18 @@ export function buildLibrary(filelist) {
                 if (!metadata) {
                     continue;
                 }
-                let album:Playlist;
+                let album: Playlist;
+                let artist: string[] = ["Unknown Artist"];
+                if (metadata.artist) {
+                    artist = metadata.artist;
+                }
+                if (metadata.albumartist) {
+                    artist = metadata.albumartist;
+                }
                 if (metadata.album in albumByName) {
                     album = albumByName[metadata.album];
                 } else {
-                    album = {type: "playlist", role: PlaylistRole.album, artist: metadata.artist, title: metadata.album, art:metadata.picture[0], items: []};
+                    album = {type: "playlist", role: PlaylistRole.album, artist: artist[0], title: metadata.album, art:metadata.picture[0], items: []};
                     library.items.push(album);
                     albumByName[album.title] = album;
                 }

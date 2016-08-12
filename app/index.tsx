@@ -3,16 +3,45 @@ import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
 import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
-var albumBox = React.createClass({
-    //displayName: "albumBox",
-    render: () => {
-        return (
-            <div className="albumBox">
-                Hello, world!This is a albumBox.
-            </div>
-        );
+function navigateToPlaylistNode(playlist: Playlist, playlistState: number[]): PlaylistNode {
+    let iterate = (node:PlaylistNode, depth:number):PlaylistNode => {
+        if (depth < playlistState.length) {
+            if(isPlaylist(node)) {
+                return iterate(node.items[playlistState[depth]], ++depth);
+            }
+            return null;
+        }
+        return node;
+    };
+    return iterate(playlist,0);
+}
+
+function navigateToTrack(playlist: Playlist, playlistState: number[]): Track {
+    let iterate = (node:PlaylistNode, depth:number):Track => {
+        if(isPlaylist(node) && depth < playlistState.length) {
+            return iterate(node.items[playlistState[depth]], ++depth);
+        }
+        if(isTrack(node)) {
+            return node;
+        }
+        return null;
+    };
+    let track:Track = iterate(playlist,0);
+    return track;
+}
+function navigateToFirstTrack(playlist: PlaylistNode, state: number[]): Track {
+    let iterate = (node:PlaylistNode):Track => {
+        if(isPlaylist(node)) {
+            state.push(0);
+            return iterate(node.items[0]);
+        }
+        if(isTrack(node)) {
+            return node;
+        }
     }
-});
+    return iterate(playlist);
+}
+
 
 function isTrack(n: PlaylistNode): n is Track {
     return n.type === "track";
@@ -76,6 +105,17 @@ function AlbumList(props:AlbumListProps) {
     );
 }
 
+var albumBox = React.createClass({
+    //displayName: "albumBox",
+    render: () => {
+        return (
+            <div className="albumBox">
+                Hello, world!This is a albumBox.
+            </div>
+        );
+    }
+});
+
 enum PlayStatus {
     play,
     pause,
@@ -83,26 +123,34 @@ enum PlayStatus {
     hammertime
 }
 
+enum PlayerControl {
+    play,
+    pause,
+    next,
+    previous,
+    repeat,
+    random
+}
+
 interface PlayerIndicatorProps {
     position?: number;
     audioPlayer: HTMLAudioElement;
     audioState: PlayStatus;
     togglePlay: any;
+    playerControl: any;
+    queueState: number[];
+    queue: Playlist;
 }
 
 interface PlayerIndicatorState {
-    currentTime: number;
+    current: number;
     duration: number;
-    track: Track;
-    position: number;
 }
 
 class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicatorState> {
     state = {
-            currentTime: 0,
+            current: 0,
             duration: 0,
-            track: undefined,
-            position: 0,
         };
 
     componentDidMount () {
@@ -114,10 +162,10 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
         let f = () => {
             window.requestAnimationFrame(f);
             let state = this.state;
-            if ( Math.floor(this.props.audioPlayer.currentTime) == state.currentTime) return;
+            if ( Math.floor(this.props.audioPlayer.currentTime) == state.current) return;
             if ( isNaN(this.props.audioPlayer.currentTime) ) return;
-            state.currentTime = Math.floor(this.props.audioPlayer.currentTime);
-            console.log(state.currentTime);
+            state.current = Math.floor(this.props.audioPlayer.currentTime);
+            console.log(state.current);
             this.setState(state);
         };
         window.requestAnimationFrame(f);
@@ -137,27 +185,44 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps,PlayerIndicat
         }
     }
 
+    getNearest(node: PlaylistNode, object: any) {
+
+    }
     render () {
+        var title: string = "-/-";
+        var artist: string = "-/-";
+        var art: string = "album.png";
+        if (this.props.queueState && this.props.queue && this.props.queue.items.length) {
+            let node:Track = navigateToTrack(this.props.queue, this.props.queueState);
+            title = node.title;
+            artist = node.artist
+            if (node.art) {
+                art = "data:image/"+node.art.format+";base64,"+btoa(String.fromCharCode.apply(null, node.art.data));
+            }
+        }
+
+        let currentTime:string = Math.floor(this.state.current/60)+":"+(this.state.current%60<10?"0"+this.state.current%60:this.state.current%60);
+        let durationTime:string = Math.floor(this.state.duration/60)+":"+(this.state.duration%60<10?"0"+this.state.duration%60:this.state.duration%60);
         return (
             <div className="playerIndicator">
                 <div className="track">
                     <div className="art">
-                        <img src="http://placehold.it/300x300"></img>
+                        <img src={art}></img>
                     </div>
                     <div className="info">
-                        <div className="title">What's up?</div>
-                        <div className="artist">Four Non Blondes</div>
+                        <div className="title">{title}</div>
+                        <div className="artist">{artist}</div>
                     </div>
                 </div>
                 <div className="progress">
-                <div className="currentTime">{Math.floor(this.state.currentTime/60)}:{this.state.currentTime%60<10?"0"+this.state.currentTime%60:this.state.currentTime%60}</div>
-                <input type="range" className="slider" max={this.state.duration} value={this.state.currentTime} onChange={(event:any) => (this.props.audioPlayer.currentTime = event.target.value)}></input>
-                <div className="duration">{Math.floor(this.state.duration/60)}:{this.state.duration%60<10?"0"+this.state.duration%60:this.state.duration%60}</div>
+                <div className="currentTime">{currentTime}</div>
+                <input type="range" className="slider" max={this.state.duration} value={this.state.current} onChange={(event:any) => (this.props.audioPlayer.currentTime = event.target.value)}></input>
+                <div className="duration">{durationTime}</div>
                 </div>
                 <div className="controls">
-                <div className="previous button"><i className="fa fa-step-backward" aria-hidden="true"></i></div>
+                <div className="previous button" onClick={() => {this.props.playerControl(PlayerControl.previous)}}><i className="fa fa-step-backward" aria-hidden="true"></i></div>
                 <div className="playStatus button" onClick={() => {this.props.togglePlay()}}>{this.getPlayText()}</div>
-                <div className="next button"><i className="fa fa-step-forward" aria-hidden="true"></i></div>
+                <div className="next button" onClick={() => {this.props.playerControl(PlayerControl.next)}}><i className="fa fa-step-forward" aria-hidden="true"></i></div>
                 <div className="volume button"><i className="fa fa-volume-up" aria-hidden="true"></i></div>
                 <div className="repeat button"><i className="fa fa-repeat" aria-hidden="true"></i></div>
                 <div className="random button"><i className="fa fa-random" aria-hidden="true"></i></div>
@@ -175,8 +240,8 @@ interface MukakePlayerState {
     audioPlayer: HTMLAudioElement;
     audioState: PlayStatus;
     collections: Playlist;
-    currentPlaylist: Playlist;
-    playlistState: number[];
+    queue: Playlist;
+    queueState: number[];
 }
 
 class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> {
@@ -184,7 +249,8 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
 
     constructor () {
         super()
-        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, currentPlaylist: null, playlistState: [] }
+        let emptyQueue:Playlist = {type: "playlist", role: PlaylistRole.playlist, title: "Current Playlist", artist:"Current User", items: []};
+        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, queue: emptyQueue, queueState: [] }
     }
 
     componentDidMount () {
@@ -200,19 +266,33 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
         return (
             <div>
                 <AlbumList playAlbum={this.playAlbum.bind(this)} collection={this.state.collections}/>
-                <PlayerIndicator audioPlayer={this.state.audioPlayer} audioState={this.state.audioState} togglePlay={this.togglePlay.bind(this)}/>
+                <PlayerIndicator 
+                    audioPlayer={this.state.audioPlayer} 
+                    audioState={this.state.audioState} 
+                    togglePlay={this.togglePlay.bind(this)}
+                    playerControl={this.playerControl.bind(this)}
+                    queueState={this.state.queueState}
+                    queue={this.state.queue} />
             </div>
         );
     }
 
     playAlbum(item: Playlist) {
-        let track = item.items[0]
-        if (isTrack(track)) {
-            this.state.audioPlayer.src = track.uri;
-            this.state.audioPlayer.play();
-            this.state.audioState = PlayStatus.play;
-            this.forceUpdate();
-        }
+        this.state.queue.items = [item];
+        this.state.queueState = [];
+        
+        let track:Track = navigateToFirstTrack(this.state.queue, this.state.queueState);
+        this.state.audioPlayer.src = track.uri;
+        this.state.audioPlayer.play();
+        this.state.audioState = PlayStatus.play;
+        this.forceUpdate(); 
+    }
+
+    playTrack(track: Track) {
+        this.state.audioPlayer.src = track.uri;
+        this.state.audioPlayer.play();
+        this.state.audioState = PlayStatus.play;
+        this.forceUpdate();
     }
 
     togglePlay () {
@@ -231,7 +311,34 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
         this.setState(state);
     }
 
-
+    playerControl(action: PlayerControl) {
+        switch(action) {
+            case PlayerControl.next:
+                let findNextTrack = (node: Playlist, state: number[], depth: number) => {
+                    console.log("queue:", node);
+                    console.log("start:", state);
+                    console.log("depth:", depth);
+                    state[state.length-depth]++;
+                    console.log("new state:", state);
+                    let nextNode = navigateToPlaylistNode(node, state);
+                    console.log("new node", nextNode);
+                    if (! nextNode) {
+                        state[state.length-depth]--;
+                        depth++;
+                        state[state.length-depth]++;
+                        return findNextTrack(node, state, depth);
+                    }
+                    if( isPlaylist(nextNode)) {
+                        return navigateToFirstTrack(nextNode, state);
+                    }
+                    if( isTrack(nextNode)) {
+                        return nextNode;
+                    }
+                }
+                let track: Track = findNextTrack(this.state.queue, this.state.queueState, 1);
+                this.playTrack(track);
+            }
+        }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
