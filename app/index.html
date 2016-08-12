@@ -31,7 +31,7 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      background: #222;
+      background: #111;
       font-size: 1.2em;
     }
     .menuPane .menuEntry {
@@ -39,7 +39,7 @@
       flex-wrap: nowrap;
     }
     .menuPane .menuEntry:hover {
-      background: #333;
+      background: #222;
     }
     .menuPane .menuEntry.active {
       border-left: 1.2mm solid darkorange;
@@ -68,7 +68,7 @@
       padding: 2mm 2mm 1cm 2mm;
     }
     .albumEntry:hover {
-      background: red;
+      background: #222;
     }
     .albumArtContainer {
       position: relative;
@@ -116,8 +116,7 @@
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
-      background: darkred;
-      padding: 2mm;
+      background: hsla(24, 100%, 50%, 0.9);
     }
     .playerIndicator > div {
       width: 100%;
@@ -127,7 +126,11 @@
       flex: 0 0 8.25cm;
       display: flex;
       flex-wrap: nowrap;
-      border: 1px dotted black;
+      padding: 2mm;
+      box-sizing: border-box;
+    }
+    .playerIndicator .track:hover {
+      background: hsla(24, 80%, 40%, 0.9);;
     }
     .playerIndicator .art {
       width: 13mm;
@@ -151,7 +154,7 @@
       display: flex;
       flex-wrap: nowrap;
       padding: 0 2mm 0 2mm;
-      border: 1px dotted black;
+      :border: 1px dotted black;
     }
     .playerIndicator .progress .slider {
       ;width: 100%;
@@ -178,7 +181,7 @@
       display: flex;
       flex-wrap: nowrap;
       justify-content: center;
-      border: 1px dotted black;
+      :border: 1px dotted black;
       padding: 0 2mm 0 2mm;
     }
     .playerIndicator .controls .button {
@@ -209,7 +212,7 @@
       height: 5mm;
       width: 5mm;
       margin-top: -2.15mm;
-      background: darkred;
+      background: rgba(0,0,0,0);
       cursor: pointer;
     }
 
