@@ -7,35 +7,18 @@ var __extends = (this && this.__extends) || function (d, b) {
 var React = require('react');
 var ReactDOM = require('react-dom');
 var electron_1 = require('electron');
-var mockupTracks = [
-    { artist: "Poets of the Fall", title: "Fire", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/01%20-%20Fire.mp3" },
-    { artist: "Poets of the Fall", title: "Sorry go'round", number: 1, uri: "file:///D:/Musik/Poets%20of%20the%20Fall%20-%20Carnival%20of%20Rust%20[2006]/02%20-%20Sorry%20go%20'round.mp3" }
-];
-var mockupAlbumData = [
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg", tracks: mockupTracks },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" },
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg" },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" },
-    { artist: "Bloodhound Gang", title: "Hooray For Boobies", art: "file:///D:/Musik/Bloodhound%20Gang%20-%20Hooray%20For%20Boobies/The_Bloodhound_Gang_-_Hooray_for_Boobies.png" },
-    { artist: "Poets Of The Fall", title: "Carnival of Rust", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/carnivalofrust.jpg" },
-    { artist: "DualCore", title: "AllTheThings", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/dualcore.jpg" },
-    { artist: "DualCore", title: "NextLevel", art: "file:///C:/Users/denta/Documents/GitHub/mukake/app/nextlevel.jpg" }
-];
-var mockupPlaylist = {
-    position: 0,
-    subposition: 0,
-    items: []
-};
 var albumBox = React.createClass({
     //displayName: "albumBox",
     render: function () {
         return (React.createElement("div", {className: "albumBox"}, "Hello, world!This is a albumBox."));
     }
 });
+function isTrack(n) {
+    return n.type === "track";
+}
+function isPlaylist(n) {
+    return n.type === "playlist";
+}
 var AlbumEntry = (function (_super) {
     __extends(AlbumEntry, _super);
     function AlbumEntry(props) {
@@ -53,13 +36,14 @@ var AlbumEntry = (function (_super) {
 }(React.Component));
 function AlbumList(props) {
     return (React.createElement("div", {className: "albumList"}, (function () {
-        if (props.library) {
-            return props.library.map(function (element) {
+        if (props.collection) {
+            console.log(props.collection);
+            return props.collection.items.map(function (element) {
                 return React.createElement(AlbumEntry, {playAlbum: props.playAlbum, album: element});
             });
         }
         else {
-            return React.createElement("div", null, "Loading...");
+            return [React.createElement("div", null, "Loading...")];
         }
     })()));
 }
@@ -77,7 +61,7 @@ var PlayerIndicator = (function (_super) {
         this.state = {
             currentTime: 0,
             duration: 0,
-            album: undefined,
+            track: undefined,
             position: 0
         };
     }
@@ -124,28 +108,28 @@ var MukakePlayer = (function (_super) {
     __extends(MukakePlayer, _super);
     function MukakePlayer() {
         _super.call(this);
-        this.state = { audioPlayer: new Audio(), audioState: PlayStatus.stop, mainLibrary: null };
+        this.state = { audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, currentPlaylist: null, playlistState: [] };
     }
     MukakePlayer.prototype.componentDidMount = function () {
         var _this = this;
         electron_1.ipcRenderer.send('asynchronous-message', 'ping');
-        electron_1.ipcRenderer.on('asynchronous-reply', function (event, arg) {
+        electron_1.ipcRenderer.on('asynchronous-reply', function (event, collections) {
             var state = _this.state;
-            state.mainLibrary = arg;
+            state.collections = collections;
             _this.setState(state);
         });
     };
     MukakePlayer.prototype.render = function () {
-        return (React.createElement("div", null, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this), library: this.state.mainLibrary}), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this)})));
+        return (React.createElement("div", null, React.createElement(AlbumList, {playAlbum: this.playAlbum.bind(this), collection: this.state.collections}), React.createElement(PlayerIndicator, {audioPlayer: this.state.audioPlayer, audioState: this.state.audioState, togglePlay: this.togglePlay.bind(this)})));
     };
     MukakePlayer.prototype.playAlbum = function (item) {
-        mockupPlaylist.items = [{ album: item }];
-        mockupPlaylist.position = 0;
-        mockupPlaylist.subposition = 0;
-        this.state.audioPlayer.src = mockupPlaylist.items[0].album.tracks[0].uri;
-        this.state.audioPlayer.play();
-        this.state.audioState = PlayStatus.play;
-        this.forceUpdate();
+        var track = item.items[0];
+        if (isTrack(track)) {
+            this.state.audioPlayer.src = track.uri;
+            this.state.audioPlayer.play();
+            this.state.audioState = PlayStatus.play;
+            this.forceUpdate();
+        }
     };
     MukakePlayer.prototype.togglePlay = function () {
         var state = this.state;

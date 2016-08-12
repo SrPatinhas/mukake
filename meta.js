@@ -2,19 +2,11 @@
 var fs = require('fs');
 var path = require('path');
 var musicmetadata = require('musicmetadata');
+var types_1 = require('./app/types');
 process.on('unhandledRejection', function (reason, p) {
     console.log("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
     // application specific logging here
 });
-/*
-musicmetadata(fs.createReadStream("../library/"), (error, metadata) => {
-            if (error) {
-                console.log(error);
-                return;
-            }
-            console.log(metadata);
-        });
-*/
 function recursiveReaddirSync(dir) {
     var list = [];
     var files = fs.readdirSync(dir);
@@ -60,7 +52,7 @@ function musicmetadatawrapper(filename) {
 }
 function buildLibrary(filelist) {
     return Promise.resolve().then(function () {
-        var library = [];
+        var library = { type: "playlist", role: types_1.PlaylistRole.collection, title: "Albums", artist: "Internal", items: [] };
         var albumByName = {};
         //filelist = [filelist[0]];
         var promises = filelist.map(function (e) { return musicmetadatawrapper(path.resolve(e)).catch(function (error) { return null; }); });
@@ -75,12 +67,12 @@ function buildLibrary(filelist) {
                     album = albumByName[metadata.album];
                 }
                 else {
-                    album = { artist: metadata.artist, title: metadata.album, art: metadata.picture[0], tracks: [] };
-                    library.push(album);
+                    album = { type: "playlist", role: types_1.PlaylistRole.album, artist: metadata.artist, title: metadata.album, art: metadata.picture[0], items: [] };
+                    library.items.push(album);
                     albumByName[album.title] = album;
                 }
-                var track = { artist: metadata.artist, title: metadata.title, number: metadata.track.no, uri: metadata.filename };
-                album.tracks.push(track);
+                var track = { type: "track", artist: metadata.artist, title: metadata.title, number: metadata.track.no, uri: metadata.filename };
+                album.items.push(track);
             }
             return library;
         });

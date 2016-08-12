@@ -20,14 +20,6 @@ function createWindow() {
         win = null;
     });
 }
-function getFileList() {
-    var fs = require("fs");
-    var dirlist = fs.readdirSync("D:\\Musik");
-    electron_2.ipcMain.on('asynchronous-message', function (event, arg) {
-        console.log(arg); // prints "ping"
-        event.sender.send('asynchronous-reply', dirlist);
-    });
-}
 function dispatcher() {
     electron_2.ipcMain.on('asynchronous-message', function (event, arg) {
         meta_1.buildLibrary(meta_1.recursiveReaddirSync("library")).then(function (library) {
@@ -42,7 +34,6 @@ function libraryHelper() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 electron_1.app.on('ready', createWindow);
-electron_1.app.on('ready', getFileList);
 electron_1.app.on('ready', dispatcher);
 // Quit when all windows are closed.
 electron_1.app.on('window-all-closed', function () {

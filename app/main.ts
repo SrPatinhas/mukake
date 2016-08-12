@@ -26,17 +26,6 @@ function createWindow() {
   })
 }
 
-function getFileList() {
-  const fs = require("fs");
-
-  let dirlist = fs.readdirSync("D:\\Musik");
-
-  ipcMain.on('asynchronous-message', (event, arg) => {
-    console.log(arg)  // prints "ping"
-    event.sender.send('asynchronous-reply', dirlist)
-  })
-}
-
 function dispatcher() {
   ipcMain.on('asynchronous-message', (event, arg) => {
     buildLibrary(recursiveReaddirSync("library")).then((library) => {
@@ -53,7 +42,6 @@ function libraryHelper() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow)
-app.on('ready', getFileList)
 app.on('ready', dispatcher);
 
 // Quit when all windows are closed.

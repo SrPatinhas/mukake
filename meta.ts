@@ -1,21 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as musicmetadata from 'musicmetadata';
+import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './app/types';
+
 
 process.on('unhandledRejection', function(reason, p){
     console.log("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
     // application specific logging here
 });
 
-/*
-musicmetadata(fs.createReadStream("../library/"), (error, metadata) => {
-            if (error) {
-                console.log(error);
-                return;
-            }
-            console.log(metadata);
-        });
-*/
 export function recursiveReaddirSync(dir) {
 
     let list = [];
@@ -65,7 +58,7 @@ function musicmetadatawrapper(filename:string):Promise<any> {
 
 export function buildLibrary(filelist) {
     return Promise.resolve().then(() => {
-        let library = [];
+        let library:Playlist = {type: "playlist", role: PlaylistRole.collection, title: "Albums", artist: "Internal", items: []}
         let albumByName = {}
         //filelist = [filelist[0]];
         let promises = filelist.map(e => musicmetadatawrapper(path.resolve(e)).catch((error) => null));
@@ -74,16 +67,16 @@ export function buildLibrary(filelist) {
                 if (!metadata) {
                     continue;
                 }
-                let album;
+                let album:Playlist;
                 if (metadata.album in albumByName) {
                     album = albumByName[metadata.album];
                 } else {
-                    album = {artist: metadata.artist, title: metadata.album, art:metadata.picture[0], tracks: []};
-                    library.push(album)
+                    album = {type: "playlist", role: PlaylistRole.album, artist: metadata.artist, title: metadata.album, art:metadata.picture[0], items: []};
+                    library.items.push(album);
                     albumByName[album.title] = album;
                 }
-                let track = {artist:metadata.artist, title:metadata.title, number:metadata.track.no, uri:metadata.filename};
-                album.tracks.push(track);
+                let track:Track = {type: "track", artist:metadata.artist, title:metadata.title, number:metadata.track.no, uri:metadata.filename};
+                album.items.push(track);
             }
             return library;
         });

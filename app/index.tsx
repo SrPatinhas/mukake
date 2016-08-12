@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
+import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
 var albumBox = React.createClass({
     //displayName: "albumBox",
@@ -13,40 +14,6 @@ var albumBox = React.createClass({
     }
 });
 
-enum PlaylistRole {
-    collection,
-    album,
-    playlist,
-    queue,
-}
-
-interface PlaylistNode {
-    type: "playlist"|"track"
-}
-
-interface PlaylistItem {
-    playlist;
-    track;
-    album;
-}
-
-interface Playlist extends PlaylistNode {
-    role: PlaylistRole;
-    title: string;
-    artist: string;
-    art?: any;
-    lastPlayed: number;
-    items: PlaylistItem;
-}
-
-interface Track extends PlaylistNode {
-    title: string;
-    artist: string;
-    composer: string;
-    number: number;
-    uri: string;
-}
-
 function isTrack(n: PlaylistNode): n is Track {
     return n.type === "track";
 }
@@ -58,7 +25,6 @@ interface AlbumEntryProps {
     album: Playlist;
     playAlbum: any;
 }
-
 
 class AlbumEntry extends React.Component<AlbumEntryProps, any> {
     constructor(props: AlbumEntryProps) {
@@ -86,17 +52,23 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
     }
 }
 
-function AlbumList(props) {
+interface AlbumListProps {
+    playAlbum: any;
+    collection: Playlist;
+}
+
+function AlbumList(props:AlbumListProps) {
     return (
         <div className="albumList">
             {
                 (() => {
-                    if (props.library) {
-                        return props.library.map((element) =>
+                    if (props.collection) {
+                        console.log(props.collection);
+                        return props.collection.items.map((element:Playlist) =>
                             <AlbumEntry playAlbum={props.playAlbum} album={element}></AlbumEntry>
                         )
                     } else {
-                        return <div>Loading...</div>;
+                        return [<div>Loading...</div>];
                     }
                 })()
             }
@@ -202,7 +174,7 @@ interface MukakePlayerProps {
 interface MukakePlayerState {
     audioPlayer: HTMLAudioElement;
     audioState: PlayStatus;
-    mainLibrary: Playlist[];
+    collections: Playlist;
     currentPlaylist: Playlist;
     playlistState: number[];
 }
@@ -212,14 +184,14 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
 
     constructor () {
         super()
-        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, mainLibrary: null, currentPlaylist: null, playlistState: [] }
+        this.state = {audioPlayer: new Audio(), audioState: PlayStatus.stop, collections: null, currentPlaylist: null, playlistState: [] }
     }
 
     componentDidMount () {
         ipcRenderer.send('asynchronous-message', 'ping')
-        ipcRenderer.on('asynchronous-reply', (event, arg) => {
+        ipcRenderer.on('asynchronous-reply', (event, collections) => {
             let state = this.state;
-            state.mainLibrary = arg;
+            state.collections = collections;
             this.setState(state);
         });
     }
@@ -227,17 +199,20 @@ class MukakePlayer extends React.Component<MukakePlayerProps,MukakePlayerState> 
     render () {
         return (
             <div>
-                <AlbumList playAlbum={this.playAlbum.bind(this)} library={this.state.mainLibrary}/>
+                <AlbumList playAlbum={this.playAlbum.bind(this)} collection={this.state.collections}/>
                 <PlayerIndicator audioPlayer={this.state.audioPlayer} audioState={this.state.audioState} togglePlay={this.togglePlay.bind(this)}/>
             </div>
         );
     }
 
     playAlbum(item: Playlist) {
-        this.state.audioPlayer.src = item.items[0].uri;
-        this.state.audioPlayer.play();
-        this.state.audioState = PlayStatus.play;
-        this.forceUpdate();
+        let track = item.items[0]
+        if (isTrack(track)) {
+            this.state.audioPlayer.src = track.uri;
+            this.state.audioPlayer.play();
+            this.state.audioState = PlayStatus.play;
+            this.forceUpdate();
+        }
     }
 
     togglePlay () {
