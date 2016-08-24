@@ -231,12 +231,14 @@ interface PlayerIndicatorProps {
 interface PlayerIndicatorState {
     current: number;
     duration: number;
+    volumeState: boolean;
 }
 
 class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndicatorState> {
     state = {
         current: 0,
         duration: 0,
+        volumeState: false,
     };
 
     componentDidMount() {
@@ -259,6 +261,27 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
             state.duration = Math.floor(this.props.audioPlayer.duration);
             this.setState(state);
         });
+        this.props.audioPlayer.addEventListener("volumechange", (event: any) => {
+            this.forceUpdate();
+        });
+
+    }
+
+    toggleVolumeSlider() {
+        console.log("toggling")
+        let state = this.state;
+        if (state.volumeState) {
+            state.volumeState = false;
+        } else {
+            state.volumeState = true;
+        }
+        this.setState(state);
+    }
+    hideVolumeSlider() {
+        console.log("hiding now!");
+        let state = this.state;
+        state.volumeState = false;
+        this.setState(state);
     }
 
     getPlayText() {
@@ -270,9 +293,6 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         }
     }
 
-    getNearest(node: PlaylistNode, object: any) {
-
-    }
     render() {
         var title: string = "";
         var artist: string = "";
@@ -286,33 +306,60 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         let currentTime: string = Math.floor(this.state.current / 60) + ":" + (this.state.current % 60 < 10 ? "0" + this.state.current % 60 : this.state.current % 60);
         let durationTime: string = Math.floor(this.state.duration / 60) + ":" + (this.state.duration % 60 < 10 ? "0" + this.state.duration % 60 : this.state.duration % 60);
         return (
-            <div className="playerIndicator">
-                <div className="track">
-                    <div className="art">
-                        <img src={art}></img>
+            <div className="playerIndicatorWrapper">
+                <div className="playerIndicator">
+                    <div className="track">
+                        <div className="art">
+                            <img src={art}></img>
+                        </div>
+                        <div className="info">
+                            <div className="title">{title}</div>
+                            <div className="artist">{artist}</div>
+                        </div>
                     </div>
-                    <div className="info">
-                        <div className="title">{title}</div>
-                        <div className="artist">{artist}</div>
+                    <div className="progress">
+                        <div className="currentTime">{currentTime}</div>
+                        <input type="range" className="slider" max={this.state.duration} value={this.state.current} onChange={(event: any) => (this.props.audioPlayer.currentTime = event.target.value) }></input>
+                        <div className="duration">{durationTime}</div>
+                    </div>
+                    <div className="controls">
+                        <div className="previous button" onClick={() => { this.props.playerControl(PlayerControl.previous) } }><i className="fa fa-step-backward" aria-hidden="true"></i></div>
+                        <div className="playStatus button" onClick={() => { this.props.playerControl(PlayerControl.toggle) } }>{this.getPlayText() }</div>
+                        <div className="next button" onClick={() => { this.props.playerControl(PlayerControl.next) } }><i className="fa fa-step-forward" aria-hidden="true"></i></div>
+                        <div className="volume button" onClick={(event: any) => { this.toggleVolumeSlider() } }><i className="fa fa-volume-up" aria-hidden="true"></i></div>
+                        <div className="repeat button"><i className="fa fa-repeat" aria-hidden="true"></i></div>
+                        <div className="random button"><i className="fa fa-random" aria-hidden="true"></i></div>
                     </div>
                 </div>
-                <div className="progress">
-                    <div className="currentTime">{currentTime}</div>
-                    <input type="range" className="slider" max={this.state.duration} value={this.state.current} onChange={(event: any) => (this.props.audioPlayer.currentTime = event.target.value) }></input>
-                    <div className="duration">{durationTime}</div>
-                </div>
-                <div className="controls">
-                    <div className="previous button" onClick={() => { this.props.playerControl(PlayerControl.previous) } }><i className="fa fa-step-backward" aria-hidden="true"></i></div>
-                    <div className="playStatus button" onClick={() => { this.props.playerControl(PlayerControl.toggle) } }>{this.getPlayText() }</div>
-                    <div className="next button" onClick={() => { this.props.playerControl(PlayerControl.next) } }><i className="fa fa-step-forward" aria-hidden="true"></i></div>
-                    <div className="volume button"><i className="fa fa-volume-up" aria-hidden="true"></i></div>
-                    <div className="repeat button"><i className="fa fa-repeat" aria-hidden="true"></i></div>
-                    <div className="random button"><i className="fa fa-random" aria-hidden="true"></i></div>
-                </div>
+                {(this.state.volumeState)?<VolumeSlider audioPlayer={this.props.audioPlayer} hide={this.hideVolumeSlider.bind(this)}/>:null}
             </div>
         )
     }
 }
+
+interface VolumeSliderProps {
+    audioPlayer: HTMLAudioElement;
+    hide: any;
+}
+class VolumeSlider extends React.Component<VolumeSliderProps, any> {
+    
+    componentDidMount() {
+        (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
+    }
+
+    render() {
+        let volume = Math.floor(this.props.audioPlayer.volume * 100);
+        return (
+            <div className="volumeSlider" ref="volumeSlider" onBlur={this.props.hide()}>
+                <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
+                <div className="volumeTrack">
+                    <input type="range" className="slider" min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
+                </div>
+            </div >
+        );
+    }
+}
+
 interface MenuEntryProps {
     collection: Playlist;
     title: string;
