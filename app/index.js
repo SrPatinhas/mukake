@@ -63,26 +63,6 @@ function navigateToNextTrack(playlist, state) {
     };
     return findNextTrack(playlist, state);
 }
-function navigateToNextTrack2(playlist, state) {
-    var findNextTrack = function (node, state, depth) {
-        state[state.length - depth]++;
-        var nextNode = navigateToPlaylistNode(node, state);
-        if (!nextNode) {
-            state[state.length - depth]--;
-            depth++;
-            state[state.length - depth]++;
-            return findNextTrack(node, state, depth);
-        }
-        if (isPlaylist(nextNode)) {
-            return navigateToFirstTrack(nextNode, state);
-        }
-        if (isTrack(nextNode)) {
-            return nextNode;
-        }
-        return null;
-    };
-    return findNextTrack(playlist, state, 1);
-}
 function navigateToPlaylistNode(playlist, playlistState) {
     var iterate = function (node, depth) {
         if (depth < playlistState.length) {
@@ -135,6 +115,16 @@ function navigateToLastTrack(playlist, state) {
         }
     };
     return iterate(playlist);
+}
+function getArt(playlist, playlistState) {
+    var node = navigateToPlaylistNode(playlist, playlistState);
+    if (node.art) {
+        return "data:image/" + node.art.format + ";base64," + btoa(String.fromCharCode.apply(null, node.art.data));
+    }
+    if (playlistState.length == 0) {
+        return "art.jpg";
+    }
+    return getArt(playlist, playlistState.slice(0, playlistState.length - 1));
 }
 function isTrack(n) {
     return n.type === "track";
@@ -190,6 +180,7 @@ var PlayerControl;
     PlayerControl[PlayerControl["previous"] = 3] = "previous";
     PlayerControl[PlayerControl["repeat"] = 4] = "repeat";
     PlayerControl[PlayerControl["random"] = 5] = "random";
+    PlayerControl[PlayerControl["toggle"] = 6] = "toggle";
 })(PlayerControl || (PlayerControl = {}));
 var PlayerIndicator = (function (_super) {
     __extends(PlayerIndicator, _super);
@@ -243,13 +234,11 @@ var PlayerIndicator = (function (_super) {
             var node = navigateToTrack(this.props.queue, this.props.queueState);
             title = node.title;
             artist = node.artist;
-            if (node.art) {
-                art = "data:image/" + node.art.format + ";base64," + btoa(String.fromCharCode.apply(null, node.art.data));
-            }
+            art = getArt(this.props.queue, this.props.queueState);
         }
         var currentTime = Math.floor(this.state.current / 60) + ":" + (this.state.current % 60 < 10 ? "0" + this.state.current % 60 : this.state.current % 60);
         var durationTime = Math.floor(this.state.duration / 60) + ":" + (this.state.duration % 60 < 10 ? "0" + this.state.duration % 60 : this.state.duration % 60);
-        return (React.createElement("div", {className: "playerIndicator"}, React.createElement("div", {className: "track"}, React.createElement("div", {className: "art"}, React.createElement("img", {src: art})), React.createElement("div", {className: "info"}, React.createElement("div", {className: "title"}, title), React.createElement("div", {className: "artist"}, artist))), React.createElement("div", {className: "progress"}, React.createElement("div", {className: "currentTime"}, currentTime), React.createElement("input", {type: "range", className: "slider", max: this.state.duration, value: this.state.current, onChange: function (event) { return (_this.props.audioPlayer.currentTime = event.target.value); }}), React.createElement("div", {className: "duration"}, durationTime)), React.createElement("div", {className: "controls"}, React.createElement("div", {className: "previous button", onClick: function () { _this.props.playerControl(PlayerControl.previous); }}, React.createElement("i", {className: "fa fa-step-backward", "aria-hidden": "true"})), React.createElement("div", {className: "playStatus button", onClick: function () { _this.props.togglePlay(); }}, this.getPlayText()), React.createElement("div", {className: "next button", onClick: function () { _this.props.playerControl(PlayerControl.next); }}, React.createElement("i", {className: "fa fa-step-forward", "aria-hidden": "true"})), React.createElement("div", {className: "volume button"}, React.createElement("i", {className: "fa fa-volume-up", "aria-hidden": "true"})), React.createElement("div", {className: "repeat button"}, React.createElement("i", {className: "fa fa-repeat", "aria-hidden": "true"})), React.createElement("div", {className: "random button"}, React.createElement("i", {className: "fa fa-random", "aria-hidden": "true"})))));
+        return (React.createElement("div", {className: "playerIndicator"}, React.createElement("div", {className: "track"}, React.createElement("div", {className: "art"}, React.createElement("img", {src: art})), React.createElement("div", {className: "info"}, React.createElement("div", {className: "title"}, title), React.createElement("div", {className: "artist"}, artist))), React.createElement("div", {className: "progress"}, React.createElement("div", {className: "currentTime"}, currentTime), React.createElement("input", {type: "range", className: "slider", max: this.state.duration, value: this.state.current, onChange: function (event) { return (_this.props.audioPlayer.currentTime = event.target.value); }}), React.createElement("div", {className: "duration"}, durationTime)), React.createElement("div", {className: "controls"}, React.createElement("div", {className: "previous button", onClick: function () { _this.props.playerControl(PlayerControl.previous); }}, React.createElement("i", {className: "fa fa-step-backward", "aria-hidden": "true"})), React.createElement("div", {className: "playStatus button", onClick: function () { _this.props.playerControl(PlayerControl.toggle); }}, this.getPlayText()), React.createElement("div", {className: "next button", onClick: function () { _this.props.playerControl(PlayerControl.next); }}, React.createElement("i", {className: "fa fa-step-forward", "aria-hidden": "true"})), React.createElement("div", {className: "volume button"}, React.createElement("i", {className: "fa fa-volume-up", "aria-hidden": "true"})), React.createElement("div", {className: "repeat button"}, React.createElement("i", {className: "fa fa-repeat", "aria-hidden": "true"})), React.createElement("div", {className: "random button"}, React.createElement("i", {className: "fa fa-random", "aria-hidden": "true"})))));
     };
     return PlayerIndicator;
 }(React.Component));
@@ -348,6 +337,25 @@ var MukakePlayer = (function (_super) {
                 break;
             case PlayerControl.previous:
                 returnState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                break;
+            case PlayerControl.toggle:
+                console.log("Toggle:", state.audioState);
+                if (state.audioState == PlayStatus.stop || state.audioState == PlayStatus.pause) {
+                    this.playerControl(PlayerControl.play);
+                }
+                else if (state.audioState == PlayStatus.play) {
+                    this.playerControl(PlayerControl.pause);
+                }
+                break;
+            case PlayerControl.play:
+                console.log("Play:", state.audioState);
+                this.state.audioPlayer.play();
+                state.audioState = PlayStatus.play;
+                break;
+            case PlayerControl.pause:
+                console.log("Pause:", state.audioState);
+                this.state.audioPlayer.pause();
+                state.audioState = PlayStatus.pause;
                 break;
         }
         console.log("returnState:", returnState);

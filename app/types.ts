@@ -6,7 +6,10 @@ export enum PlaylistRole {
 }
 
 export interface PlaylistNode {
-    type: "playlist"|"track"
+    type: "playlist"|"track";
+    title: string;
+    artist: string;
+    art?: any;
 }
 
 export interface PlaylistItem {
@@ -14,19 +17,13 @@ export interface PlaylistItem {
 
 export interface Playlist extends PlaylistNode {
     role: PlaylistRole;
-    title: string;
-    artist: string;
-    art?: any;
     lastPlayed?: number;
     items: PlaylistNode[];
 }
 
 export interface Track extends PlaylistNode {
-    title: string;
-    artist: string;
     composer?: string;
     number?: number;
-    art?: any;
     uri: string;
 }
 

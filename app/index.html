@@ -10,7 +10,7 @@
   <style>
     body {
       background: black;
-      color: lightgray;
+      color: white;
       box-sizing: border-box;
       margin: 0;
       font-family: Open Sans;
@@ -28,7 +28,7 @@
     }
     .menuPane {
       width: 8.25cm;
-      height: 100%;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       background: #111;
@@ -130,7 +130,8 @@
       box-sizing: border-box;
     }
     .playerIndicator .track:hover {
-      background: hsla(24, 80%, 40%, 0.9);;
+      -background: hsla(24, 80%, 40%, 0.9);
+      background: hsla(0, 0%, 0%, 0.2);
     }
     .playerIndicator .art {
       width: 13mm;
@@ -191,6 +192,9 @@
     .playerIndicator .controls .button:last-child {
       padding: 0 0 0 4mm;
     }
+    .playerIndicator .controls .button:hover {
+      color: hsla(0, 100%, 100%, 0.6);
+    }
 
     input[type=range] {
 	    -webkit-appearance: none;
@@ -214,6 +218,9 @@
       margin-top: -2.15mm;
       background: rgba(0,0,0,0);
       cursor: pointer;
+    }
+    .progress:hover input[type=range]::-webkit-slider-thumb {
+      border-color: hsla(0, 100%, 100%, 0.6);
     }
 
     input[type=range]::-webkit-slider-runnable-track {
