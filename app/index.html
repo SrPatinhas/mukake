@@ -17,15 +17,16 @@
       font-size: 0.8em;
       height: 100vh;
     }
-
+    
     img {
       display: block;
     }
-
+    
     .windowRoot {
       display: flex;
       align-items: stretch;
     }
+    
     .menuPane {
       width: 8.25cm;
       height: 100vh;
@@ -34,49 +35,60 @@
       background: #111;
       font-size: 1.2em;
     }
+    
     .menuPane .menuEntry {
       display: flex;
       flex-wrap: nowrap;
     }
+    
     .menuPane .menuEntry:hover {
       background: hsla(0, 100%, 100%, 0.07);
     }
+    
     .menuPane .menuEntry.active {
       border-left: 1.2mm solid darkorange;
       color: darkorange;
     }
+    
     .menuPane .menuEntry.inactive {
-      border-left: 1.2mm solid rgba(0,0,0,0);
+      border-left: 1.2mm solid rgba(0, 0, 0, 0);
     }
+    
     .menuPane img.entryArt {
       width: 6mm;
       height: 6mm;
       padding: 4mm;
     }
+    
     .menuPane .entryText {
       display: flex;
       align-items: center;
     }
-
+    
     .albumList {
       display: flex;
       flex-flow: row wrap;
     }
+    
     .albumEntry {
       width: 4cm;
       height: 6cm;
       padding: 2mm 2mm 1cm 2mm;
     }
+    
     .albumEntry:hover {
       background: hsla(0, 100%, 100%, 0.07);
     }
+    
     .albumArtContainer {
       position: relative;
     }
+    
     .albumEntry img {
       width: 4cm;
       height: 4cm;
     }
+    
     .albumControls {
       opacity: 0;
       position: absolute;
@@ -86,28 +98,31 @@
       bottom: 0;
       background: hsla(0, 0%, 15%, 0.9);
     }
+    
     .albumControls:hover {
       opacity: 1;
       transition: opacity 0.5s;
     }
+    
     .albumControlsAdd,
-    .albumControlsPlay{
+    .albumControlsPlay {
       padding: 5mm;
     }
-
+    
     .albumEntry .albumTitle,
     .albumEntry .albumArtist {
       overflow: hidden;
       max-height: 5ex;
       padding: 1mm 0 0 1mm;
     }
+    
     .albumEntry .albumTitle {
       font-size: 1.1em;
       font-weight: bold;
     }
-    .albumEntry .albumArtist {
-    }
-
+    
+    .albumEntry .albumArtist {}
+    
     .playerIndicatorWrapper {
       display: flex;
       flex-wrap: nowrap;
@@ -117,7 +132,7 @@
       bottom: 0;
       width: 100%;
     }
-
+    
     .volumeSlider {
       box-sizing: border-box;
       display: flex;
@@ -127,29 +142,39 @@
       width: 8cm;
       margin-bottom: -2mm;
       border: 1px solid grey;
-      padding: 1mm 4mm 1mm 4mm;
     }
-
+    
+    .volumeSlider:focus {
+      border: 1px solid grey;
+      outline: none;
+    }
+    
     .volumeSlider > div {
       font-size: 1.2em;
-      padding: 0 1mm 0 1mm;
     }
-
+    
     .volumeSlider > div:first-child {
-      padding-left: 0;
+      padding: 0 0 0 4mm;
     }
+    
     .volumeSlider > div:last-child {
       padding-right: 0;
     }
-
+    
     .volumeSlider .volumeTrack {
       width: 100%;
+      display: flex;
+      align-items: center;
     }
-
+    
     .volumeSlider input {
       width: 100%;
     }
-
+    
+    .volumeTrack input[type=range] {
+      padding: 1mm 4mm 1mm 4mm;
+    }
+    
     .playerIndicator {
       width: 100%;
       box-sizing: border-box;
@@ -158,10 +183,11 @@
       align-items: center;
       background: hsla(24, 100%, 50%, 0.9);
     }
+    
     .playerIndicator > div {
       width: 100%;
     }
-
+    
     .playerIndicator .track {
       flex: 0 0 8.25cm;
       display: flex;
@@ -169,82 +195,94 @@
       padding: 2mm;
       box-sizing: border-box;
     }
+    
     .playerIndicator .track:hover {
       background: hsla(0, 0%, 0%, 0.2);
     }
+    
     .playerIndicator .art {
       width: 13mm;
       border: 1px solid black;
     }
+    
     .playerIndicator .art img {
       width: 100%;
     }
+    
     .playerIndicator .track .info {
       padding-left: 3mm;
     }
+    
     .playerIndicator .track .info div {
       padding: .5mm 0 .5mm 0;
       display: flex;
       align-items: center;
     }
-
-
+    
     .playerIndicator .progress {
       width: 100%;
       display: flex;
       flex-wrap: nowrap;
       padding: 0 2mm 0 2mm;
-      :border: 1px dotted black;
+      : border: 1px dotted black;
     }
+    
     .playerIndicator .progress .slider {
-      ;width: 100%;
+      ;
+      width: 100%;
       display: flex;
     }
+    
     .playerIndicator .progress .slider > input {
       width: 100%;
       margin: 0;
     }
+    
     .playerIndicator .progress .currentTime {
       padding-right: 3mm;
       display: flex;
       align-items: center;
     }
+    
     .playerIndicator .progress .duration {
       padding-left: 3mm;
       display: flex;
       align-items: center;
     }
-
-
+    
     .playerIndicator .controls {
       flex: 0 0 7cm;
       display: flex;
       flex-wrap: nowrap;
       justify-content: center;
-      :border: 1px dotted black;
+      : border: 1px dotted black;
       padding: 0 2mm 0 2mm;
     }
+    
     .playerIndicator .controls .button {
       padding: 0 4mm 0 4mm;
       font-size: 1.2em;
     }
+    
     .playerIndicator .controls .button:last-child {
       padding: 0 0 0 4mm;
     }
+    
     .playerIndicator .controls .button:hover {
       color: hsla(0, 100%, 100%, 0.6);
     }
-
+    
     input[type=range] {
-	    -webkit-appearance: none;
-    	height: 10mm; 
-	    padding: 0;
-      background: rgba(0,0,0,0);
+      -webkit-appearance: none;
+      height: 10mm;
+      padding: 0;
+      background: rgba(0, 0, 0, 0);
     }
+    
     input[type=range]:focus {
       outline: none;
     }
-
+    
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
       box-sizing: border-box;
@@ -253,13 +291,14 @@
       height: 5mm;
       width: 5mm;
       margin-top: -2.15mm;
-      background: rgba(0,0,0,0);
+      background: rgba(0, 0, 0, 0);
       cursor: pointer;
     }
+    
     .progress:hover input[type=range]::-webkit-slider-thumb {
       border-color: hsla(0, 100%, 100%, 0.6);
     }
-
+    
     input[type=range]::-webkit-slider-runnable-track {
       width: 100%;
       height: 0.5mm;
@@ -268,8 +307,10 @@
       border-radius: 25px;
     }
   </style>
-  </head>
-  <body>
-    <div id="container"></div>
-  </body>
+</head>
+
+<body>
+  <div id="container"></div>
+</body>
+
 </html>

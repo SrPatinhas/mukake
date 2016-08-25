@@ -264,6 +264,9 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         this.props.audioPlayer.addEventListener("volumechange", (event: any) => {
             this.forceUpdate();
         });
+        this.props.audioPlayer.addEventListener("ended", (event: any) => {
+            this.props.playerControl(PlayerControl.next);
+        });
 
     }
 
@@ -344,16 +347,17 @@ interface VolumeSliderProps {
 class VolumeSlider extends React.Component<VolumeSliderProps, any> {
     
     componentDidMount() {
+        console.log("volumeSlider was called!");
         (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
     }
 
     render() {
         let volume = Math.floor(this.props.audioPlayer.volume * 100);
         return (
-            <div className="volumeSlider" ref="volumeSlider" onBlur={this.props.hide()}>
+            <div className="volumeSlider">
                 <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
                 <div className="volumeTrack">
-                    <input type="range" className="slider" min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
+                    <input type="range" className="slider" tabIndex="-1" ref="volumeSlider" onBlur={() => null /*this.props.hide*/} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
                 </div>
             </div >
         );
