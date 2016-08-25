@@ -17,7 +17,7 @@ function findLeftmostLeaf(node: PlaylistNode): number[] {
         return [];
     }
     if (isPlaylist(node)) {
-        return [0].concat(findRightmostLeaf(node.items[0]))
+        return [0].concat(findLeftmostLeaf(node.items[0]))
     }
 }
 
@@ -265,7 +265,11 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
             this.forceUpdate();
         });
         this.props.audioPlayer.addEventListener("ended", (event: any) => {
-            this.props.playerControl(PlayerControl.next);
+            if (navigateToNextTrack(this.props.queue, this.props.queueState)) {
+                this.props.playerControl(PlayerControl.next);
+            } else {
+                this.props.playerControl(PlayerControl.pause);
+            }
         });
 
     }
@@ -334,7 +338,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
                         <div className="random button"><i className="fa fa-random" aria-hidden="true"></i></div>
                     </div>
                 </div>
-                {(this.state.volumeState)?<VolumeSlider audioPlayer={this.props.audioPlayer} hide={this.hideVolumeSlider.bind(this)}/>:null}
+                {(this.state.volumeState) ? <VolumeSlider audioPlayer={this.props.audioPlayer} hide={this.hideVolumeSlider.bind(this) }/> : null}
             </div>
         )
     }
@@ -345,7 +349,7 @@ interface VolumeSliderProps {
     hide: any;
 }
 class VolumeSlider extends React.Component<VolumeSliderProps, any> {
-    
+
     componentDidMount() {
         console.log("volumeSlider was called!");
         (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
@@ -374,19 +378,27 @@ function MenuEntry(props: MenuEntryProps) {
     if (props.viewState == ViewState[props.title]) {
         state = "active";
     }
+    let titleDict = {
+            albums: "Alben",
+            artists: "Künstler",
+            songs: "Songs",
+            playlists: "Wiedergabelisten",
+            settings: "Einstellungen",
+            queue: "Aktuelle Wiedergabe",
+        };
     return (
         <div className={"menuEntry " + state}>
             <img className="entryArt" src="album.png" ></img>
-            <div className="entryText">{props.title}</div>
+            <div className="entryText">{titleDict[props.title]}</div>
         </div>
     );
 }
 
 enum ViewState {
     albums,
-    artist,
-    song,
-    playlist,
+    artists,
+    songs,
+    playlists,
     settings,
     queue,
 }
@@ -506,10 +518,16 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         switch (action) {
             case PlayerControl.next:
                 currentState = navigateToNextTrack(this.state.queue, this.state.queueState);
+                if (! currentState) {
+                    currentState = findLeftmostLeaf(this.state.queue)
+                }
                 break;
             case PlayerControl.previous:
                 if (state.audioPlayer.currentTime < 4) {
                     currentState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                    if (! currentState) {
+                        currentState = findRightmostLeaf(this.state.queue)
+                    }
                 } else {
                     state.audioPlayer.currentTime = 0;
                 }
