@@ -2,7 +2,7 @@
   "name": "mukake",
   "version": "0.1.0",
   "main": "main.js",
-  "description": "Mukake media player",
+  "description": "Mukake Media Player",
   "scripts": {
     "build": "tsc -p .",
     "start": "electron --debug=5858 ."

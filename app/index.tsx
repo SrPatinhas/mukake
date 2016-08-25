@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
-import {Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
+import {ViewState, Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
 function findRightmostLeaf(node: PlaylistNode): number[] {
     if (isTrack(node)) {
@@ -227,19 +227,12 @@ class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
                         className="sortby"
                         text="Sortierung:"
                         entries={["Albumname", "Veröffentlichungsdatum", "Künstler", "Dateidatum", "Default"]}
-                        default={3} />
-                    <div className="filter">
-                        <div className="text">Filter: </div>
-                        <div className="dropdown">
-                            <ul>
-                                <li className="inActive inVisible">Albumname</li>
-                                <li className="inActive inVisible">Veröffentlichungsdatum</li>
-                                <li className="inActive inVisible">Künstler</li>
-                                <li className="active visible">Dateidatum</li>
-                                <li className="inActive inVisible">Default</li>
-                            </ul>
-                        </div>
-                    </div>
+                        default={4} />
+                    <DropDownSelector
+                        className="filter"
+                        text="Filter:"
+                        entries={["Filter A", "Filter B", "Filter C", "Filter D", "Default"]}
+                        default={4} />
                 </div>
                 <AlbumList collection={this.props.collection} playAlbum={this.props.playPlayist} />
             </div>
@@ -252,7 +245,6 @@ interface DropDownEntryProps {
     active: boolean;
     text: string;
     clicked: any;
-    canceled: any;
 }
 function DropDownEntry(props: DropDownEntryProps) {
     let classText = ""
@@ -266,9 +258,6 @@ function DropDownEntry(props: DropDownEntryProps) {
     } else {
         classText += "inActive ";
     }
-    console.log(props.text);
-    console.log(props.active);
-    let onClickHandler;
     return (
         <li className={classText} onClick={props.clicked}>{props.text}</li>
     );
@@ -291,14 +280,13 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
     }
 
     componentDidMount() {
-        console.log("dropdown was called!");
-        let f = () => {
-            window.requestAnimationFrame(f);
+        let blurhandler = () => {
+            window.requestAnimationFrame(blurhandler);
             if (this.state.visible) {
                 (ReactDOM.findDOMNode(this.refs["dropdown"]) as HTMLDivElement).focus();
             }
         };
-        window.requestAnimationFrame(f);
+        window.requestAnimationFrame(blurhandler);
     }
 
     render() {
@@ -308,15 +296,18 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
                 <div className="text">{this.props.text}</div>
                 <div className="dropdownWrapper"><div className="spacer">{longest}</div>
                     <div className="helper">
-                        <div className={"dropdown " + (this.state.visible ? "visible" : "") } tabIndex="-1" ref="dropdown" onBlur={this.toggleVisibility.bind(this, null) } style={{ top: this.state.visible ? -0.8 * this.state.active + 'em' : 0 }}>
+                        <div className={"dropdown " + (this.state.visible ? "visible" : "") }
+                            tabIndex="-1"
+                            ref="dropdown"
+                            onBlur={this.handleClick.bind(this, null) }
+                            style={{ top: this.state.visible ? -0.8 * this.state.active + 'em' : 0 }}>
                             <ul>
                                 {this.props.entries.map((value, index) =>
                                     <DropDownEntry
                                         visible={this.state.visible ? true : false}
                                         active={index == this.state.active ? true : false}
                                         text={value}
-                                        clicked={this.toggleVisibility.bind(this, index) }
-                                        canceled={this.toggleVisibility.bind(this, null) }/>
+                                        clicked={this.handleClick.bind(this, index) }/>
                                 ) }
                             </ul>
                         </div>
@@ -326,15 +317,21 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
         );
     }
 
-    toggleVisibility(index) {
+    handleClick(index) {
         let state = this.state;
-        if (state.visible) {
+        if (index == null) {
+            console.log("onBlur()");
             state.visible = false;
-            if (index != null) {
-                state.active = index;
-            }
+            this.setState(state);
         } else {
-            state.visible = true;
+            if (state.visible) {
+                console.log("onClick()");
+                state.visible = false;
+                state.active = index;
+            } else {
+                console.log("onShow()");
+                state.visible = true;
+            }
         }
         this.setState(state);
     }
@@ -544,14 +541,6 @@ function MenuEntry(props: MenuEntryProps) {
     );
 }
 
-enum ViewState {
-    albums,
-    artists,
-    songs,
-    playlists,
-    settings,
-    queue,
-}
 interface MenuPaneProps {
     collections: Collections;
     viewState: ViewState;
@@ -599,7 +588,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
     }
 
     componentDidMount() {
-        ipcRenderer.send('asynchronous-message', 'ping')
+        ipcRenderer.send('asynchronous-message', this.state.viewState)
         ipcRenderer.on('asynchronous-reply', (event, collections) => {
             let state = this.state;
             state.collections = collections;
