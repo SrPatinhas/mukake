@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Hello World!</title>
+  <title>Mukake Media Player</title>
   <script src="index.js"></script>
   <link rel="stylesheet" href="css/font-awesome.css">
   <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans" />
@@ -65,10 +65,94 @@
       align-items: center;
     }
     
-    .albumList {
+    .view {
+      margin: 5mm;
+    }
+    
+    .viewList {
       display: flex;
       flex-flow: row wrap;
     }
+    
+    .viewMenu {
+      display: flex;
+      flex-flow: row wrap;
+    }
+    
+    .viewMenu > * {
+      padding: 1mm 4mm 1mm 0;
+      display: flex;
+      flex-flow: row nowrap;
+    }
+    
+    .viewMenu > *:first-child {
+      padding-left: 0;
+    }
+    
+    .viewMenu > *:last-child {
+      padding-right: 0;
+    }
+    
+    .viewMenu .dropdownWrapper {
+      height: 0;
+    }
+    
+    .viewMenu .dropdownWrapper .spacer {
+      visibility: hidden;
+      height: 0;
+    }
+    
+    .viewMenu .dropdownWrapper .helper {
+      position: absolute;
+    }
+    
+    .viewMenu .dropdown {
+      outline: 0;
+    }
+    
+    .viewMenu .dropdown.visible {
+      position: relative;
+      z-index: 1;
+      border: 1pt solid gray;
+      background: #111;
+      padding: 3mm;
+      margin: -3mm;
+      font-size: 1.2em;
+    }
+    
+    .viewMenu .dropdown .inVisible {
+      display: none;
+    }
+    
+    .viewMenu .dropdown .active {
+      color: hsla(24, 100%, 50%, 1.0);
+    }
+    
+    .viewMenu .dropdown .inActive {}
+    
+    .viewMenu .dropdown .visible .active {
+      color: hsla(24, 100%, 50%, 1.0);
+      ;
+    }
+    
+    .viewMenu .dropdown .inVisible .inActive {}
+    
+    .viewMenu .dropdown.visible li {
+      padding: 0.2em;
+    }
+    
+    .viewMenu .dropdown ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .viewMenu .text:after {
+      content: " ";
+      white-space: pre;
+    }
+    
+    .viewMenu .dropdown ul > li {}
     
     .albumEntry {
       width: 4cm;

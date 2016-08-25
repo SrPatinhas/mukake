@@ -174,7 +174,7 @@ interface AlbumListProps {
 
 function AlbumList(props: AlbumListProps) {
     return (
-        <div className="albumList">
+        <div className="viewList">
             {
                 (() => {
                     if (props.collection) {
@@ -188,6 +188,156 @@ function AlbumList(props: AlbumListProps) {
             }
         </div>
     );
+}
+
+enum AlbumSort {
+    byName,
+    byDate,
+    byArtist,
+    byFileDate,
+    byDefault
+}
+
+interface AlbumViewProps {
+    playPlayist: any;
+    addPlaylist?: any;
+    collection: Playlist;
+}
+interface AlbumViewState {
+    sort: AlbumSort;
+}
+
+class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
+
+    render() {
+        let titleDict = {
+            albums: "Alben",
+            artists: "Künstler",
+            songs: "Songs",
+            playlists: "Wiedergabelisten",
+            settings: "Einstellungen",
+            queue: "Aktuelle Wiedergabe",
+        };
+        return (
+            <div className="view albumView">
+                <h1 className="viewTitel">{titleDict.albums}</h1>
+                <div className="viewMenu">
+                    <div className="playAll">Alle Wiedergeben</div>
+                    <DropDownSelector
+                        className="sortby"
+                        text="Sortierung:"
+                        entries={["Albumname", "Veröffentlichungsdatum", "Künstler", "Dateidatum", "Default"]}
+                        default={3} />
+                    <div className="filter">
+                        <div className="text">Filter: </div>
+                        <div className="dropdown">
+                            <ul>
+                                <li className="inActive inVisible">Albumname</li>
+                                <li className="inActive inVisible">Veröffentlichungsdatum</li>
+                                <li className="inActive inVisible">Künstler</li>
+                                <li className="active visible">Dateidatum</li>
+                                <li className="inActive inVisible">Default</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <AlbumList collection={this.props.collection} playAlbum={this.props.playPlayist} />
+            </div>
+        );
+    }
+
+}
+interface DropDownEntryProps {
+    visible: boolean;
+    active: boolean;
+    text: string;
+    clicked: any;
+    canceled: any;
+}
+function DropDownEntry(props: DropDownEntryProps) {
+    let classText = ""
+    if (props.visible) {
+        classText += "visible ";
+    } else {
+        classText += "inVisible ";
+    }
+    if (props.active) {
+        classText = "active visible";
+    } else {
+        classText += "inActive ";
+    }
+    console.log(props.text);
+    console.log(props.active);
+    let onClickHandler;
+    return (
+        <li className={classText} onClick={props.clicked}>{props.text}</li>
+    );
+}
+
+interface DropDownSelectorProps {
+    text: string;
+    className: string;
+    entries: string[];
+    default?: number;
+}
+interface DropDownSelectorState {
+    active: number;
+    visible: boolean;
+}
+class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSelectorState> {
+    state = {
+        active: this.props.default ? this.props.default : 0,
+        visible: false,
+    }
+
+    componentDidMount() {
+        console.log("dropdown was called!");
+        let f = () => {
+            window.requestAnimationFrame(f);
+            if (this.state.visible) {
+                (ReactDOM.findDOMNode(this.refs["dropdown"]) as HTMLDivElement).focus();
+            }
+        };
+        window.requestAnimationFrame(f);
+    }
+
+    render() {
+        let longest = this.props.entries.reduce((pre, cur) => pre.length < cur.length ? cur : pre);
+        return (
+            <div className={this.props.className}>
+                <div className="text">{this.props.text}</div>
+                <div className="dropdownWrapper"><div className="spacer">{longest}</div>
+                    <div className="helper">
+                        <div className={"dropdown " + (this.state.visible ? "visible" : "") } tabIndex="-1" ref="dropdown" onBlur={this.toggleVisibility.bind(this, null) } style={{ top: this.state.visible ? -0.8 * this.state.active + 'em' : 0 }}>
+                            <ul>
+                                {this.props.entries.map((value, index) =>
+                                    <DropDownEntry
+                                        visible={this.state.visible ? true : false}
+                                        active={index == this.state.active ? true : false}
+                                        text={value}
+                                        clicked={this.toggleVisibility.bind(this, index) }
+                                        canceled={this.toggleVisibility.bind(this, null) }/>
+                                ) }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    toggleVisibility(index) {
+        let state = this.state;
+        if (state.visible) {
+            state.visible = false;
+            if (index != null) {
+                state.active = index;
+            }
+        } else {
+            state.visible = true;
+        }
+        this.setState(state);
+    }
 }
 
 var albumBox = React.createClass({
@@ -350,7 +500,7 @@ interface VolumeSliderProps {
 }
 class VolumeSlider extends React.Component<VolumeSliderProps, any> {
 
-    componentDidMount() {
+    componentDidUpdate() {
         console.log("volumeSlider was called!");
         (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
     }
@@ -361,7 +511,7 @@ class VolumeSlider extends React.Component<VolumeSliderProps, any> {
             <div className="volumeSlider">
                 <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
                 <div className="volumeTrack">
-                    <input type="range" className="slider" tabIndex="-1" ref="volumeSlider" onBlur={() => null /*this.props.hide*/} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
+                    <input type="range" className="slider" tabIndex="0" ref="volumeSlider" onBlur={() => this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
                 </div>
             </div >
         );
@@ -379,13 +529,13 @@ function MenuEntry(props: MenuEntryProps) {
         state = "active";
     }
     let titleDict = {
-            albums: "Alben",
-            artists: "Künstler",
-            songs: "Songs",
-            playlists: "Wiedergabelisten",
-            settings: "Einstellungen",
-            queue: "Aktuelle Wiedergabe",
-        };
+        albums: "Alben",
+        artists: "Künstler",
+        songs: "Songs",
+        playlists: "Wiedergabelisten",
+        settings: "Einstellungen",
+        queue: "Aktuelle Wiedergabe",
+    };
     return (
         <div className={"menuEntry " + state}>
             <img className="entryArt" src="album.png" ></img>
@@ -464,7 +614,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                     <MenuPane collections={this.state.collections} viewState={this.state.viewState}/>
                 </div>
                 <div className="windowRightPane">
-                    <AlbumList playAlbum={this.playAlbum.bind(this) } collection={this.state.collections.albums}/>
+                    <AlbumView playPlayist={this.playAlbum.bind(this) } collection={this.state.collections.albums}/>
                 </div>
                 <PlayerIndicator
                     audioPlayer={this.state.audioPlayer}
@@ -518,14 +668,14 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         switch (action) {
             case PlayerControl.next:
                 currentState = navigateToNextTrack(this.state.queue, this.state.queueState);
-                if (! currentState) {
+                if (!currentState) {
                     currentState = findLeftmostLeaf(this.state.queue)
                 }
                 break;
             case PlayerControl.previous:
                 if (state.audioPlayer.currentTime < 4) {
                     currentState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
-                    if (! currentState) {
+                    if (!currentState) {
                         currentState = findRightmostLeaf(this.state.queue)
                     }
                 } else {
