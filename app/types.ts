@@ -1,3 +1,12 @@
+export enum ViewState {
+    albums,
+    artists,
+    songs,
+    playlists,
+    settings,
+    queue,
+}
+
 export enum PlaylistRole {
     collection,
     album,
