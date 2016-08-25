@@ -508,7 +508,11 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 currentState = navigateToNextTrack(this.state.queue, this.state.queueState);
                 break;
             case PlayerControl.previous:
-                currentState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                if (state.audioPlayer.currentTime < 4) {
+                    currentState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                } else {
+                    state.audioPlayer.currentTime = 0;
+                }
                 break;
             case PlayerControl.toggle:
                 if (state.audioState == PlayStatus.stop || state.audioState == PlayStatus.pause) {
@@ -540,7 +544,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Master, I am ready!");
+    console.log("Master, what are your orders?");
     ReactDOM.render(
         <MukakePlayer />,
         document.getElementById('container')
