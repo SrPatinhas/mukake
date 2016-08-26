@@ -34,6 +34,9 @@ export interface Track extends PlaylistNode {
     composer?: string;
     number?: number;
     uri: string;
+    duration: number;
+    album: string;
+    year: number;
 }
 
 export interface Collections {

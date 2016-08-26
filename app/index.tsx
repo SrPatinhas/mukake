@@ -120,7 +120,7 @@ function navigateToLastTrack(playlist: PlaylistNode, state: number[]): Track {
 function getArt(playlist: Playlist, playlistState: number[]): any {
     let node = navigateToPlaylistNode(playlist, playlistState);
     if (node.art) {
-        return "data:image/" + node.art.format + ";base64," + btoa(String.fromCharCode.apply(null, node.art.data));
+        return "data:image/" + node.art.format + ";base64," + node.art.data;
     }
     if (playlistState.length == 0) {
         return "art.jpg";
@@ -138,7 +138,8 @@ function isPlaylist(n: PlaylistNode): n is Playlist {
 
 interface AlbumEntryProps {
     album: Playlist;
-    playAlbum: any;
+    playNode: any;
+    addNode: any;
 }
 
 class AlbumEntry extends React.Component<AlbumEntryProps, any> {
@@ -148,15 +149,15 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
     render() {
         let dataurl = "album.png";
         if (this.props.album.art) {
-            dataurl = "data:image/" + this.props.album.art.format + ";base64," + btoa(String.fromCharCode.apply(null, this.props.album.art.data));
+            dataurl = "data:image/" + this.props.album.art.format + ";base64," + this.props.album.art.data;
         }
         return (
             <div className="albumEntry">
                 <div className="albumArtContainer">
                     <img src={dataurl}></img>
                     <div className="albumControls">
-                        <div className="albumControlsPlay" onClick={() => this.props.playAlbum(this.props.album) }><i className="fa fa-play" aria-hidden="true"></i></div>
-                        <div className="albumControlsAdd"><i className="fa fa-plus" aria-hidden="true"></i></div>
+                        <div className="albumControlsPlay" onClick={() => this.props.playNode(this.props.album) }><i className="fa fa-play" aria-hidden="true"></i></div>
+                        <div className="albumControlsAdd" onClick={() => this.props.addNode(this.props.album) }><i className="fa fa-plus" aria-hidden="true"></i></div>
                     </div>
                 </div>
                 <div className="albumTitle">{this.props.album.title}</div>
@@ -168,7 +169,8 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
 }
 
 interface AlbumListProps {
-    playAlbum: any;
+    playNode: any;
+    addNode: any;
     collection: Playlist;
 }
 
@@ -179,7 +181,7 @@ function AlbumList(props: AlbumListProps) {
                 (() => {
                     if (props.collection) {
                         return props.collection.items.map((element: Playlist) =>
-                            <AlbumEntry playAlbum={props.playAlbum} album={element}></AlbumEntry>
+                            <AlbumEntry playNode={props.playNode} addNode={props.addNode} album={element}></AlbumEntry>
                         )
                     } else {
                         return [<div>Loading...</div>];
@@ -199,8 +201,8 @@ enum AlbumSort {
 }
 
 interface AlbumViewProps {
-    playPlayist: any;
-    addPlaylist?: any;
+    playNode: any;
+    addNode: any;
     collection: Playlist;
 }
 interface AlbumViewState {
@@ -209,6 +211,52 @@ interface AlbumViewState {
 
 class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
 
+    render() {
+        let titleDict = {
+            albums: "Alben",
+            artists: "Künstler",
+            songs: "Songs",
+            playlists: "Wiedergabelisten",
+            settings: "Einstellungen",
+            queue: "Aktuelle Wiedergabe",
+        };
+        return (
+            <div className="view albumView">
+                <h1 className="viewTitel">{titleDict.songs}</h1>
+                <div className="viewMenu">
+                    <div className="playAll">Alle Wiedergeben</div>
+                    <DropDownSelector
+                        className="sortby"
+                        text="Sortierung:"
+                        entries={["Albumname", "Veröffentlichungsdatum", "Künstler", "Dateidatum", "Default"]}
+                        default={4} />
+                    <DropDownSelector
+                        className="filter"
+                        text="Filter:"
+                        entries={["Filter A", "Filter B", "Filter C", "Filter D", "Default"]}
+                        default={4} />
+                </div>
+                <AlbumList collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode}/>
+            </div>
+        );
+    }
+}
+enum SongSort {
+    byName,
+    byAlbum,
+    byArtist,
+    byFileDate,
+    byDefault
+}
+interface SongViewProps {
+    playNode: any;
+    addNode: any;
+    collection: Playlist;
+}
+interface SongViewState {
+    sort: SongSort;
+}
+class SongView extends React.Component<SongViewProps, SongViewState> {
     render() {
         let titleDict = {
             albums: "Alben",
@@ -234,12 +282,66 @@ class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
                         entries={["Filter A", "Filter B", "Filter C", "Filter D", "Default"]}
                         default={4} />
                 </div>
-                <AlbumList collection={this.props.collection} playAlbum={this.props.playPlayist} />
+                <SongList collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode} />
             </div>
         );
     }
-
 }
+interface SongListProps {
+    playNode: any;
+    addNode: any;
+    collection: Playlist;
+}
+
+function SongList(props: SongListProps) {
+    return (
+        <div className="viewList songs">
+            {
+                (() => {
+                    if (props.collection) {
+                        return props.collection.items.map((element: Track) =>
+                            <SongEntry playNode={props.playNode} addNode={props.addNode} song={element}/>
+                        )
+                    } else {
+                        return [<div>Loading...</div>];
+                    }
+                })()
+            }
+        </div>
+    );
+}
+interface SongEntryProps {
+    song: Track;
+    playNode: any;
+    addNode: any;
+}
+
+class SongEntry extends React.Component<SongEntryProps, any> {
+    render() {
+        return (
+            <div className="songEntry">
+
+                <div className="text">
+                    <div className="title">{this.props.song.title}</div>
+
+                    <div className="artist">
+                        <div className="content">{this.props.song.artist}</div>
+                        <div className="spacer">
+                            <div className="controls">
+                                <div className="play" onClick={() => this.props.playNode(this.props.song) }><i className="fa fa-play" aria-hidden="true"></i></div>
+                                <div className="add" onClick={() => this.props.addNode(this.props.song) }><i className="fa fa-plus" aria-hidden="true"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="album">{this.props.song.album}</div>
+                    <div className="year">{this.props.song.year}</div>
+                    <div className="duration">{"Unknown"}</div>
+                </div>
+            </div>
+        );
+    }
+}
+
 interface DropDownEntryProps {
     visible: boolean;
     active: boolean;
@@ -338,7 +440,6 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
 }
 
 var albumBox = React.createClass({
-    //displayName: "albumBox",
     render: () => {
         return (
             <div className="albumBox">
@@ -519,6 +620,7 @@ interface MenuEntryProps {
     collection: Playlist;
     title: string;
     viewState: ViewState;
+    viewControl: any;
 }
 function MenuEntry(props: MenuEntryProps) {
     let state = "inactive";
@@ -536,7 +638,7 @@ function MenuEntry(props: MenuEntryProps) {
     return (
         <div className={"menuEntry " + state}>
             <img className="entryArt" src="album.png" ></img>
-            <div className="entryText">{titleDict[props.title]}</div>
+            <div className="entryText" onClick={() => props.viewControl(ViewState[props.title]) } >{titleDict[props.title]}</div>
         </div>
     );
 }
@@ -544,6 +646,7 @@ function MenuEntry(props: MenuEntryProps) {
 interface MenuPaneProps {
     collections: Collections;
     viewState: ViewState;
+    viewControl: any;
 }
 class MenuPane extends React.Component<MenuPaneProps, any> {
     render() {
@@ -551,6 +654,7 @@ class MenuPane extends React.Component<MenuPaneProps, any> {
             <div className="menuPane">
                 {Object.keys(this.props.collections).map((e) =>
                     <MenuEntry
+                        viewControl={this.props.viewControl}
                         viewState={this.props.viewState}
                         title={e}
                         collection={this.props.collections ? this.props.collections[e] : null}
@@ -581,7 +685,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
             audioPlayer: new Audio(),
             audioState: PlayStatus.stop,
             collections: { albums: null, artists: null, songs: null, playlists: null },
-            viewState: ViewState.albums,
+            viewState: ViewState.songs,
             queue: emptyQueue,
             queueState: []
         }
@@ -591,7 +695,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         ipcRenderer.send('asynchronous-message', this.state.viewState)
         ipcRenderer.on('asynchronous-reply', (event, collections) => {
             let state = this.state;
-            state.collections = collections;
+            state.collections = JSON.parse(collections);
             this.setState(state);
         });
     }
@@ -600,10 +704,21 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         return (
             <div className="windowRoot">
                 <div className="windowLeftPane">
-                    <MenuPane collections={this.state.collections} viewState={this.state.viewState}/>
+                    <MenuPane collections={this.state.collections} viewState={this.state.viewState} viewControl={this.viewControl.bind(this) }/>
                 </div>
                 <div className="windowRightPane">
-                    <AlbumView playPlayist={this.playAlbum.bind(this) } collection={this.state.collections.albums}/>
+                    {(() => {
+                        console.log("State:", this.state.viewState)
+                        switch (this.state.viewState) {
+                            case ViewState.albums:
+                                return (<AlbumView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.albums}/>);
+                            case ViewState.artists:
+                                return (<AlbumView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.albums}/>);
+                            case ViewState.songs:
+                                return (<SongView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.songs}/>);
+                        }
+                    })() }
+
                 </div>
                 <PlayerIndicator
                     audioPlayer={this.state.audioPlayer}
@@ -616,7 +731,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         );
     }
 
-    playAlbum(item: Playlist) {
+    playNode(item: PlaylistNode) {
         this.state.queue.items = [item];
         this.state.queueState = [];
 
@@ -625,6 +740,13 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         this.state.audioPlayer.play();
         this.state.audioState = PlayStatus.play;
         this.forceUpdate();
+    }
+    addNode(item: PlaylistNode) {
+        let state = this.state;
+        console.log(state.queue);
+        state.queue.items.push(item);
+        console.log(state.queue);
+        this.setState(state);
     }
 
     playTrack(track: Track) {
@@ -647,6 +769,12 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 state.audioState = PlayStatus.pause;
                 break;
         }
+        this.setState(state);
+    }
+
+    viewControl(view: ViewState) {
+        let state = this.state;
+        state.viewState = view;
         this.setState(state);
     }
 
