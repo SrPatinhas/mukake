@@ -77,11 +77,11 @@ function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
         if (isPlaylist(firstNode)) {
             let result = findNextTrack(firstNode, state.slice(1));
             if (result == null && node.items.length > state[0] + 1) {
-                result = findLeftmostLeaf(node.items[state[0]+1]);
+                result = findLeftmostLeaf(node.items[state[0] + 1]);
                 if (result == null) {
                     return null
                 }
-                return [state[0]+1].concat(result);
+                return [state[0] + 1].concat(result);
             }
             return [state[0]].concat(result);
         }
@@ -627,8 +627,7 @@ interface VolumeSliderProps {
 }
 class VolumeSlider extends React.Component<VolumeSliderProps, any> {
 
-    componentDidUpdate() {
-        console.log("volumeSlider was called!");
+    componentDidMount() {
         (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
     }
 
@@ -638,7 +637,7 @@ class VolumeSlider extends React.Component<VolumeSliderProps, any> {
             <div className="volumeSlider">
                 <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
                 <div className="volumeTrack">
-                    <input type="range" className="slider" tabIndex="0" ref="volumeSlider" onBlur={this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
+                    <input type="range" className="slider" tabIndex="-1" ref="volumeSlider" onBlur={this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
                 </div>
             </div >
         );
