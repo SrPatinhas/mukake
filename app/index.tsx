@@ -32,16 +32,21 @@ function navigateToPreviousTrack(playlist: Playlist, state: number[]): number[] 
         }
         if (isPlaylist(firstNode)) {
             let result = findPreviousTrack(firstNode, state.slice(1));
-            if (result == null) {
-                return null
+            if (result == null && 0 <= state[0] - 1) {
+                result = findLeftmostLeaf(node.items[state[0] - 1]);
+                if (result == null) {
+                    return null
+                }
+                return [state[0] - 1].concat(result);
             }
             return [state[0]].concat(result);
         }
     }
     return findPreviousTrack(playlist, state);
 }
-function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
+function navigateToNextTrack2(playlist: Playlist, state: number[]): number[] {
     let findNextTrack = (node: Playlist, state: number[]): number[] => {
+
         let firstNode = node.items[state[0]];
         if (isTrack(firstNode)) {
             if ((state[0] + 1) < node.items.length) {
@@ -53,6 +58,30 @@ function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
             let result = findNextTrack(firstNode, state.slice(1));
             if (result == null) {
                 return null
+            }
+            return [state[0]].concat(result);
+        }
+    }
+    return findNextTrack(playlist, state);
+}
+
+function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
+    let findNextTrack = (node: Playlist, state: number[]): number[] => {
+        let firstNode = node.items[state[0]];
+        if (isTrack(firstNode)) {
+            if ((state[0] + 1) < node.items.length) {
+                return [state[0] + 1].concat(findLeftmostLeaf(node.items[state[0] + 1]));
+            }
+            return null;
+        }
+        if (isPlaylist(firstNode)) {
+            let result = findNextTrack(firstNode, state.slice(1));
+            if (result == null && node.items.length > state[0] + 1) {
+                result = findLeftmostLeaf(node.items[state[0]+1]);
+                if (result == null) {
+                    return null
+                }
+                return [state[0]+1].concat(result);
             }
             return [state[0]].concat(result);
         }
@@ -609,7 +638,7 @@ class VolumeSlider extends React.Component<VolumeSliderProps, any> {
             <div className="volumeSlider">
                 <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
                 <div className="volumeTrack">
-                    <input type="range" className="slider" tabIndex="0" ref="volumeSlider" onBlur={() => this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
+                    <input type="range" className="slider" tabIndex="0" ref="volumeSlider" onBlur={this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
                 </div>
             </div >
         );

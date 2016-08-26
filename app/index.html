@@ -28,8 +28,7 @@
     }
     
     .windowLeftPane {
-      flex-basis: 8.25cm;
-      flex-grow: 0;
+      flex: 0 0 8.25cm;
     }
     
     .windowRightPane {
@@ -37,6 +36,7 @@
     }
     
     .menuPane {
+      position: fixed;
       width: 8.25cm;
       height: 100vh;
       display: flex;
@@ -385,6 +385,7 @@
     
     .playerIndicator .track {
       flex: 0 0 8.25cm;
+      max-width: 8.25cm;
       display: flex;
       flex-wrap: nowrap;
       padding: 2mm;
@@ -397,6 +398,7 @@
     
     .playerIndicator .art {
       width: 13mm;
+      min-width: 13mm;
       border: 1px solid black;
     }
     
@@ -406,12 +408,15 @@
     
     .playerIndicator .track .info {
       padding-left: 3mm;
+      min-width: 0;
     }
     
     .playerIndicator .track .info div {
       padding: .5mm 0 .5mm 0;
-      display: flex;
       align-items: center;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
     
     .playerIndicator .progress {
