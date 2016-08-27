@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="css/font-awesome.css">
   <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans" />
   <style>
+    :root {
+      --menu-width: 8.25cm;
+      --base-tone: #FF9F00;
+    }
     body {
       background: black;
       color: white;
@@ -24,11 +28,10 @@
     
     .windowRoot {
       display: flex;
-      align-items: stretch;
     }
     
     .windowLeftPane {
-      flex: 0 0 8.25cm;
+      flex: 0 0 var(--menu-width);
     }
     
     .windowRightPane {
@@ -37,7 +40,7 @@
     
     .menuPane {
       position: fixed;
-      width: 8.25cm;
+      width: var(--menu-width);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -55,34 +58,30 @@
     }
     
     .menuPane .menuEntry.active {
-      border-left: 1.2mm solid darkorange;
-      color: darkorange;
+      border-left: 1.2mm solid var(--base-tone);
+      color: var(--base-tone);
     }
     
     .menuPane .menuEntry.inactive {
-      border-left: 1.2mm solid rgba(0, 0, 0, 0);
+      border-left: 1.2mm solid rgba(0,0,0,0);
     }
     
     .menuPane img.entryArt {
-      width: 6mm;
-      height: 6mm;
-      padding: 4mm;
+      width: 2ex;
+      height: 2ex;
+      padding: 3mm;
     }
     
     .menuPane .entryText {
       display: flex;
       align-items: center;
     }
-    
+    /* General View */
     .view {
       margin: 5mm 5mm 0 5mm;
     }
     
-    .viewList {
-      display: flex;
-      flex-flow: row wrap;
-    }
-    
+    /* Menu Line on Views */
     .viewMenu {
       display: flex;
       flex-flow: row nowrap;
@@ -102,7 +101,12 @@
     .viewMenu > *:last-child {
       padding-right: 0;
     }
-    
+        
+    .viewMenu .text:after {
+      content: " ";
+      white-space: pre;
+    }
+
     .viewMenu .dropdownWrapper {
       height: 0;
     }
@@ -169,29 +173,33 @@
       margin: 0;
     }
     
-    .viewMenu .text:after {
-      content: " ";
-      white-space: pre;
-    }
-    
     .viewMenu .dropdown ul > li {}
     
+
+
+    /* General View List */
+    .viewList {
+      display: flex;
+      flex-flow: row wrap;
+    }
+
+    /* Songs View List*/
     .viewList.songs {
       display: flex;
       flex-flow: column nowrap;
       padding-bottom: 2cm;
     }
     
-    .viewList.songs .songEntry:nth-child(odd) {
+    .viewList.songs .entry:nth-child(odd) {
       background: #222;
     }
     
-    .viewList.songs .songEntry .text {
+    .viewList.songs .entry .text {
       display: flex;
       flex-wrap: wrap;
     }
     
-    .viewList.songs .songEntry .text > div {
+    .viewList.songs .entry .text > div {
       min-width: 0;
       overflow: hidden;
       white-space: nowrap;
@@ -199,7 +207,7 @@
       padding: 1mm 2mm 1mm 2mm;
     }
     
-    .viewList.songs .songEntry .artist {
+    .viewList.songs .entry .artist {
       display: flex;
       align-items: center;
     }
@@ -219,72 +227,73 @@
       background: #333;
     }
     
-    .viewList.songs .songEntry:hover > div {
+    .viewList.songs .controls > div {
+      padding: 0 2mm 0 2mm;
+    }
+
+    .viewList.songs .entry:hover > div {
       background: #333;
     }
     
-    .viewList.songs .songEntry:hover > div .controls {
+    .viewList.songs .entry:hover > div .controls {
       opacity: 1;
       transition: opacity 0.1s;
     }
     
-    .viewList.songs .controls > div {
-      padding: 0 2mm 0 2mm;
-    }
-    
-    .viewList.songs .songEntry .text > div:last-child {
+    .viewList.songs .entry .text > div:last-child {
       padding-right: 0;
     }
     
-    .viewList.songs .songEntry .text > div:first-child {
+    .viewList.songs .entry .text > div:first-child {
       padding-left: 0;
     }
     
-    .viewList.songs .songEntry .title {
+    .viewList.songs .entry .title {
       flex-grow: 4;
       flex-basis: 0;
     }
     
-    .viewList.songs .songEntry .artist {
+    .viewList.songs .entry .artist {
       flex-grow: 4;
       flex-basis: 0;
     }
     
-    .viewList.songs .songEntry .album {
+    .viewList.songs .entry .album {
       flex-grow: 3;
       flex-basis: 0;
     }
     
-    .viewList.songs .songEntry .year {
+    .viewList.songs .entry .year {
       flex-grow: 1;
       flex-basis: 0;
     }
     
-    .viewList.songs .songEntry .duration {
+    .viewList.songs .entry .duration {
       flex-grow: 1;
       flex-basis: 0;
     }
     
-    .albumEntry {
+    /* Albums View List */
+    .viewList.albums .entry {
       width: 4cm;
       height: 6cm;
       padding: 2mm 2mm 1cm 2mm;
     }
     
-    .albumEntry:hover {
+    .viewList.albums .entry:hover {
       background: hsla(0, 100%, 100%, 0.07);
     }
     
-    .albumArtContainer {
+    .viewList.albums .art {
       position: relative;
     }
     
-    .albumEntry img {
+    .viewList.albums .entry .art img {
       width: 4cm;
       height: 4cm;
     }
     
-    .albumControls {
+    .viewList.albums .controls {
       opacity: 0;
       position: absolute;
       display: flex;
@@ -294,30 +303,31 @@
       background: hsla(0, 0%, 15%, 0.9);
     }
     
-    .albumControls:hover {
+    .viewList.albums .controls:hover {
       opacity: 1;
       transition: opacity 0.5s;
     }
     
-    .albumControlsAdd,
-    .albumControlsPlay {
+    .viewList.albums .add,
+    .viewList.albums .play {
       padding: 5mm;
     }
     
-    .albumEntry .albumTitle,
-    .albumEntry .albumArtist {
+    .viewList.albums .title,
+    .viewList.albums .artist {
       overflow: hidden;
       max-height: 5ex;
       padding: 1mm 0 0 1mm;
     }
     
-    .albumEntry .albumTitle {
+    .viewList.albums .title {
       font-size: 1.1em;
       font-weight: bold;
     }
     
-    .albumEntry .albumArtist {}
+    .viewList.albums .artist {}
     
+    /* Player Indicator */
     .playerIndicatorWrapper {
       display: flex;
       flex-wrap: nowrap;
@@ -326,48 +336,6 @@
       position: fixed;
       bottom: 0;
       width: 100%;
-    }
-    
-    .volumeSlider {
-      box-sizing: border-box;
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      background: #222;
-      width: 8cm;
-      margin-bottom: -2mm;
-      border: 1px solid grey;
-    }
-    
-    .volumeSlider:focus {
-      border: 1px solid grey;
-      outline: none;
-    }
-    
-    .volumeSlider > div {
-      font-size: 1.2em;
-    }
-    
-    .volumeSlider > div:first-child {
-      padding: 0 0 0 4mm;
-    }
-    
-    .volumeSlider > div:last-child {
-      padding-right: 0;
-    }
-    
-    .volumeSlider .volumeTrack {
-      width: 100%;
-      display: flex;
-      align-items: center;
-    }
-    
-    .volumeSlider input {
-      width: 100%;
-    }
-    
-    .volumeTrack input[type=range] {
-      padding: 1mm 4mm 1mm 4mm;
     }
     
     .playerIndicator {
@@ -384,8 +352,8 @@
     }
     
     .playerIndicator .track {
-      flex: 0 0 8.25cm;
-      max-width: 8.25cm;
+      flex: 0 0 var(--menu-width);
+      max-width: var(--menu-width);
       display: flex;
       flex-wrap: nowrap;
       padding: 2mm;
@@ -504,6 +472,48 @@
       cursor: pointer;
       background: white;
       border-radius: 25px;
+    }
+    /* Volume Slider */
+    .volumeSlider {
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      background: #222;
+      width: 8cm;
+      margin-bottom: -2mm;
+      border: 1px solid grey;
+    }
+    
+    .volumeSlider:focus {
+      border: 1px solid grey;
+      outline: none;
+    }
+    
+    .volumeSlider > div {
+      font-size: 1.2em;
+    }
+    
+    .volumeSlider > div:first-child {
+      padding: 0 0 0 4mm;
+    }
+    
+    .volumeSlider > div:last-child {
+      padding-right: 0;
+    }
+    
+    .volumeSlider .volumeTrack {
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+    
+    .volumeSlider input {
+      width: 100%;
+    }
+    
+    .volumeTrack input[type=range] {
+      padding: 1mm 4mm 1mm 4mm;
     }
   </style>
 </head>

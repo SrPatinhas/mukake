@@ -181,17 +181,16 @@ class AlbumEntry extends React.Component<AlbumEntryProps, any> {
             dataurl = "data:image/" + this.props.album.art.format + ";base64," + this.props.album.art.data;
         }
         return (
-            <div className="albumEntry">
-                <div className="albumArtContainer">
+            <div className="entry">
+                <div className="art">
                     <img src={dataurl}></img>
-                    <div className="albumControls">
-                        <div className="albumControlsPlay" onClick={() => this.props.playNode(this.props.album) }><i className="fa fa-play" aria-hidden="true"></i></div>
-                        <div className="albumControlsAdd" onClick={() => this.props.addNode(this.props.album) }><i className="fa fa-plus" aria-hidden="true"></i></div>
+                    <div className="controls">
+                        <div className="play" onClick={() => this.props.playNode(this.props.album) }><i className="fa fa-play" aria-hidden="true"></i></div>
+                        <div className="add" onClick={() => this.props.addNode(this.props.album) }><i className="fa fa-plus" aria-hidden="true"></i></div>
                     </div>
                 </div>
-                <div className="albumTitle">{this.props.album.title}</div>
-                <div className="albumArtist">{this.props.album.artist}</div>
-                {this.props.children}
+                <div className="title">{this.props.album.title}</div>
+                <div className="artist">{this.props.album.artist}</div>
             </div>
         );
     }
@@ -205,7 +204,7 @@ interface AlbumListProps {
 
 function AlbumList(props: AlbumListProps) {
     return (
-        <div className="viewList">
+        <div className="viewList albums">
             {
                 (() => {
                     if (props.collection) {
@@ -348,11 +347,9 @@ interface SongEntryProps {
 class SongEntry extends React.Component<SongEntryProps, any> {
     render() {
         return (
-            <div className="songEntry">
-
+            <div className="entry">
                 <div className="text">
                     <div className="title">{this.props.song.title}</div>
-
                     <div className="artist">
                         <div className="content">{this.props.song.artist}</div>
                         <div className="spacer">
@@ -468,16 +465,6 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
     }
 }
 
-var albumBox = React.createClass({
-    render: () => {
-        return (
-            <div className="albumBox">
-                Hello, world!This is a albumBox.
-            </div>
-        );
-    }
-});
-
 enum PlayStatus {
     play,
     pause,
@@ -519,11 +506,6 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
     };
 
     componentDidMount() {
-        /*mySound.addEventListener("timeupdate", (event: any) => {
-            let state = this.state;
-            state.currentTime = Math.floor(event.timeStamp/1000);
-            this.setState(state);
-        });*/
         let f = () => {
             window.requestAnimationFrame(f);
             let state = this.state;
@@ -732,18 +714,30 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         return (
             <div className="windowRoot">
                 <div className="windowLeftPane">
-                    <MenuPane collections={this.state.collections} viewState={this.state.viewState} viewControl={this.viewControl.bind(this) }/>
+                    {<MenuPane 
+                        collections={this.state.collections} 
+                        viewState={this.state.viewState} 
+                        viewControl={this.viewControl.bind(this) }/>}
                 </div>
                 <div className="windowRightPane">
                     {(() => {
                         console.log("State:", this.state.viewState)
                         switch (this.state.viewState) {
                             case ViewState.albums:
-                                return (<AlbumView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.albums}/>);
+                                return (<AlbumView 
+                                    playNode={this.playNode.bind(this) } 
+                                    addNode={this.addNode.bind(this) } 
+                                    collection={this.state.collections.albums}/>);
                             case ViewState.artists:
-                                return (<AlbumView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.albums}/>);
+                                return (<AlbumView 
+                                    playNode={this.playNode.bind(this) } 
+                                    addNode={this.addNode.bind(this) } 
+                                    collection={this.state.collections.albums}/>);
                             case ViewState.songs:
-                                return (<SongView playNode={this.playNode.bind(this) } addNode={this.addNode.bind(this) } collection={this.state.collections.songs}/>);
+                                return (<SongView 
+                                    playNode={this.playNode.bind(this) } 
+                                    addNode={this.addNode.bind(this) } 
+                                    collection={this.state.collections.songs}/>);
                         }
                     })() }
 
