@@ -12,6 +12,7 @@
       --menu-width: 8.25cm;
       --base-tone: #FF9F00;
     }
+    
     body {
       background: black;
       color: white;
@@ -63,7 +64,7 @@
     }
     
     .menuPane .menuEntry.inactive {
-      border-left: 1.2mm solid rgba(0,0,0,0);
+      border-left: 1.2mm solid rgba(0, 0, 0, 0);
     }
     
     .menuPane img.entryArt {
@@ -77,11 +78,12 @@
       align-items: center;
     }
     /* General View */
+    
     .view {
       margin: 5mm 5mm 0 5mm;
     }
-    
     /* Menu Line on Views */
+    
     .viewMenu {
       display: flex;
       flex-flow: row nowrap;
@@ -101,12 +103,12 @@
     .viewMenu > *:last-child {
       padding-right: 0;
     }
-        
+    
     .viewMenu .text:after {
       content: " ";
       white-space: pre;
     }
-
+    
     .viewMenu .dropdownWrapper {
       height: 0;
     }
@@ -174,37 +176,37 @@
     }
     
     .viewMenu .dropdown ul > li {}
-    
-
-
     /* General View List */
+    
     .viewList {
       display: flex;
       flex-flow: row wrap;
     }
-
     /* Songs View List*/
+    
     .viewList.songs {
       display: flex;
       flex-flow: column nowrap;
       padding-bottom: 2cm;
     }
     
+    .viewList.songs .entry {
+      height: 3ex;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 1mm 2mm 1mm 2mm;
+    }
+    
     .viewList.songs .entry:nth-child(odd) {
       background: #222;
     }
     
-    .viewList.songs .entry .text {
-      display: flex;
-      flex-wrap: wrap;
-    }
-    
-    .viewList.songs .entry .text > div {
+    .viewList.songs .entry > div {
       min-width: 0;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      padding: 1mm 2mm 1mm 2mm;
     }
     
     .viewList.songs .entry .artist {
@@ -212,30 +214,40 @@
       align-items: center;
     }
     
-    .viewList.songs .spacer {
+    .viewList.songs .controls {
+      overflow: visible !important;
+      position: relative;
+      bottom: 1mm;
+      align-self: flex-start;
+    }
+    
+    .viewList.songs .controls .wrapper {
+      -background: red;
       position: absolute;
     }
     
-    .viewList.songs .controls {
+    .viewList.songs .controls .container {
       display: flex;
-      justify-content: flex-end;
       position: relative;
-      right: calc( 5em + 4mm);
-      width: 5em;
-      padding: 1mm 2mm 1mm 2mm;
+      align-items: center;
+      justify-content: flex-end;
+      right: calc( 1em + 4em);
+      padding: 1mm;
+      width: 4em;
+      height: 3ex;
       opacity: 0;
       background: #333;
     }
     
-    .viewList.songs .controls > div {
+    .viewList.songs .controls .container > div {
       padding: 0 2mm 0 2mm;
     }
-
-    .viewList.songs .entry:hover > div {
+    
+    .viewList.songs .entry:hover {
       background: #333;
     }
     
-    .viewList.songs .entry:hover > div .controls {
+    .viewList.songs .entry:hover > .controls .container {
       opacity: 1;
       transition: opacity 0.1s;
     }
@@ -246,6 +258,11 @@
     
     .viewList.songs .entry .text > div:first-child {
       padding-left: 0;
+    }
+    
+    .viewList.songs .entry .title {
+      flex-grow: 0;
+      flex-basis: 0;
     }
     
     .viewList.songs .entry .title {
@@ -272,12 +289,13 @@
       flex-grow: 1;
       flex-basis: 0;
     }
-    
     /* Albums View List */
+    
     .viewList.albums .entry {
       width: 4cm;
       height: 6cm;
-      padding: 2mm 2mm 1cm 2mm;
+      padding: 1.5mm;
+      padding-bottom: 5mm;
     }
     
     .viewList.albums .entry:hover {
@@ -326,8 +344,8 @@
     }
     
     .viewList.albums .artist {}
-    
     /* Player Indicator */
+    
     .playerIndicatorWrapper {
       display: flex;
       flex-wrap: nowrap;
@@ -474,6 +492,7 @@
       border-radius: 25px;
     }
     /* Volume Slider */
+    
     .volumeSlider {
       box-sizing: border-box;
       display: flex;

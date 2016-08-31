@@ -200,6 +200,7 @@ interface AlbumListProps {
     playNode: any;
     addNode: any;
     collection: Playlist;
+    sort: Sorts;
 }
 
 function AlbumList(props: AlbumListProps) {
@@ -220,61 +221,132 @@ function AlbumList(props: AlbumListProps) {
     );
 }
 
-enum AlbumSort {
-    byName,
-    byDate,
-    byArtist,
-    byFileDate,
-    byDefault
-}
-
 interface AlbumViewProps {
     playNode: any;
     addNode: any;
     collection: Playlist;
 }
 interface AlbumViewState {
-    sort: AlbumSort;
+    sort: Sorts;
+    filter: Filters
 }
-
+let SortsString = {
+            bySong: "Songname",
+            byAlbum: "Albumname",
+            byDate: "Veröffentlichungsdatum",
+            byArtist: "Künstler",
+            byFileDate: "Dateidatum",
+            byDefault: "Default"
+        }
+        let filterSortString = {
+            filterA: "filter A",
+            filterB: "filter B",
+            filterC: "filter C",
+            filterD: "filter D",
+            filterDefault: "Default"
+        }
 class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
-
+    state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
+    setSorts(sort: Sorts) {
+        console.log("new sort: ", sort);
+        this.state.sort = sort;
+        this.forceUpdate();
+    }
+    setFilters() {
+        return null;
+    }
     render() {
-        let titleDict = {
-            albums: "Alben",
-            artists: "Künstler",
-            songs: "Songs",
-            playlists: "Wiedergabelisten",
-            settings: "Einstellungen",
-            queue: "Aktuelle Wiedergabe",
-        };
+        let sorted = null;
+        if (this.props.collection) {
+            sorted = Object.create(this.props.collection);
+            sorted.items = sortPlaylist.bind(this)(this.props.collection.items);
+        }
         return (
             <div className="view albumView">
-                <h1 className="viewTitel">{titleDict.songs}</h1>
+                <h1 className="viewTitel">{getLocalized("songs") }</h1>
                 <div className="viewMenu">
                     <div className="playAll">Alle Wiedergeben</div>
                     <DropDownSelector
                         className="sortby"
                         text="Sortierung:"
-                        entries={["Albumname", "Veröffentlichungsdatum", "Künstler", "Dateidatum", "Default"]}
-                        default={4} />
+                        collection={this.props.collection}
+                        selectorMap={[
+                            [Sorts.byArtist, SortsString.byArtist],
+                            [Sorts.byTitle, SortsString.byAlbum],
+                            [Sorts.byDate, SortsString.byDate],
+                            [Sorts.byFileDate, SortsString.byFileDate],
+                            [Sorts.byDefault, SortsString.byDefault],
+                        ]}
+                        default={this.state.sort}
+                        setter={this.setSorts.bind(this) } />
                     <DropDownSelector
                         className="filter"
                         text="Filter:"
-                        entries={["Filter A", "Filter B", "Filter C", "Filter D", "Default"]}
-                        default={4} />
+                        collection={this.props.collection}
+                        selectorMap={[
+                            [Filters.filterA, filterSortString.filterA],
+                            [Filters.filterB, filterSortString.filterB],
+                            [Filters.filterC, filterSortString.filterC],
+                            [Filters.filterD, filterSortString.filterD],
+                            [Filters.filterDefault, filterSortString.filterDefault],
+                        ]}
+                        default={this.state.filter}
+                        setter={this.setFilters.bind(this) } />
                 </div>
-                <AlbumList collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode}/>
+                <AlbumList collection={sorted} playNode={this.props.playNode} addNode={this.props.addNode}/>
             </div>
         );
     }
 }
-enum SongSort {
-    byName,
+
+
+function sortPlaylist(items: PlaylistNode[]): PlaylistNode[] {
+    let sortBy = (items: PlaylistNode[], sort: string): PlaylistNode[] => {
+        return items.sort((n1, n2) => {
+            if (n1[sort] > n2[sort]) {
+                return 1;
+            }
+
+            if (n1[sort] < n2[sort]) {
+                return -1;
+            }
+            return 0;
+        });
+    };
+
+    switch (this.state.sort) {
+        case Sorts.byTitle:
+        case Sorts.bySong:
+            return sortBy(items.slice(0), "title");
+        case Sorts.byArtist:
+            return sortBy(items.slice(0), "artist");
+        case Sorts.byAlbum:
+            return sortBy(items.slice(0), "album");
+        case Sorts.byDate:
+            return sortBy(items.slice(0), "year");
+        case Sorts.byFileDate:
+            return sortBy(items.slice(0), "title");
+        case Sorts.byDefault:
+            return items.slice(0);
+    };
+}
+
+
+enum Sorts {
+    byTitle,
+    bySong,
     byAlbum,
     byArtist,
+    byDate,
     byFileDate,
     byDefault
+}
+enum Filters {
+    filterA,
+    filterB,
+    filterC,
+    filterD,
+    filterDefault
 }
 interface SongViewProps {
     playNode: any;
@@ -282,35 +354,59 @@ interface SongViewProps {
     collection: Playlist;
 }
 interface SongViewState {
-    sort: SongSort;
+    sort: Sorts;
+    filter: Filters;
 }
 class SongView extends React.Component<SongViewProps, SongViewState> {
+    state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
+    setSorts(sort: Sorts) {
+        console.log("new sort: ", sort);
+        this.state.sort = sort;
+        this.forceUpdate();
+    }
+    setFilters() {
+        return null;
+    }
     render() {
-        let titleDict = {
-            albums: "Alben",
-            artists: "Künstler",
-            songs: "Songs",
-            playlists: "Wiedergabelisten",
-            settings: "Einstellungen",
-            queue: "Aktuelle Wiedergabe",
-        };
+        let sorted = null;
+        if (this.props.collection) {
+            sorted = Object.create(this.props.collection);
+            sorted.items = sortPlaylist.bind(this)(this.props.collection.items);
+        }
         return (
             <div className="view albumView">
-                <h1 className="viewTitel">{titleDict.albums}</h1>
+                <h1 className="viewTitel">{getLocalized("albums") }</h1>
                 <div className="viewMenu">
                     <div className="playAll">Alle Wiedergeben</div>
                     <DropDownSelector
                         className="sortby"
                         text="Sortierung:"
-                        entries={["Albumname", "Veröffentlichungsdatum", "Künstler", "Dateidatum", "Default"]}
-                        default={4} />
+                        collection={this.props.collection}
+                        selectorMap={[
+                            [Sorts.bySong, SortsString.bySong],
+                            [Sorts.byArtist, SortsString.byArtist],
+                            [Sorts.byAlbum, SortsString.byAlbum],
+                            [Sorts.byDate, SortsString.byDate],
+                            [Sorts.byFileDate, SortsString.byFileDate],
+                            [Sorts.byDefault, SortsString.byDefault],
+                        ]}
+                        default={this.state.sort}
+                        setter={this.setSorts.bind(this) } />
                     <DropDownSelector
                         className="filter"
                         text="Filter:"
-                        entries={["Filter A", "Filter B", "Filter C", "Filter D", "Default"]}
-                        default={4} />
+                        collection={this.props.collection}
+                        selectorMap={[
+                            [Filters.filterA, filterSortString.filterA],
+                            [Filters.filterB, filterSortString.filterB],
+                            [Filters.filterC, filterSortString.filterC],
+                            [Filters.filterD, filterSortString.filterD],
+                            [Filters.filterDefault, filterSortString.filterDefault],
+                        ]}
+                        default={this.state.filter}
+                        setter={this.setFilters.bind(this) } />
                 </div>
-                <SongList collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode} />
+                <SongList collection={sorted} playNode={this.props.playNode} addNode={this.props.addNode} />
             </div>
         );
     }
@@ -348,21 +444,20 @@ class SongEntry extends React.Component<SongEntryProps, any> {
     render() {
         return (
             <div className="entry">
-                <div className="text">
-                    <div className="title">{this.props.song.title}</div>
-                    <div className="artist">
-                        <div className="content">{this.props.song.artist}</div>
-                        <div className="spacer">
-                            <div className="controls">
-                                <div className="play" onClick={() => this.props.playNode(this.props.song) }><i className="fa fa-play" aria-hidden="true"></i></div>
-                                <div className="add" onClick={() => this.props.addNode(this.props.song) }><i className="fa fa-plus" aria-hidden="true"></i></div>
-                            </div>
+                <div className="selector"><input type="checkbox" name="your-group" value="unit-in-group" /></div>
+                <div className="title">{this.props.song.title}</div>
+                <div className="controls">
+                    <div className="wrapper">
+                        <div className="container">
+                            <div className="play" onClick={() => this.props.playNode(this.props.song) }><i className="fa fa-play" aria-hidden="true"></i></div>
+                            <div className="add" onClick={() => this.props.addNode(this.props.song) }><i className="fa fa-plus" aria-hidden="true"></i></div>
                         </div>
                     </div>
-                    <div className="album">{this.props.song.album}</div>
-                    <div className="year">{this.props.song.year}</div>
-                    <div className="duration">{"Unknown"}</div>
                 </div>
+                <div className="artist">{this.props.song.artist}</div>
+                <div className="album">{this.props.song.album}</div>
+                <div className="year">{this.props.song.year}</div>
+                <div className="duration">{"Unknown"}</div>
             </div>
         );
     }
@@ -394,8 +489,10 @@ function DropDownEntry(props: DropDownEntryProps) {
 interface DropDownSelectorProps {
     text: string;
     className: string;
-    entries: string[];
+    collection: Playlist;
+    selectorMap: any;
     default?: number;
+    setter: any;
 }
 interface DropDownSelectorState {
     active: number;
@@ -418,7 +515,7 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
     }
 
     render() {
-        let longest = this.props.entries.reduce((pre, cur) => pre.length < cur.length ? cur : pre);
+        let longest = this.props.selectorMap.reduce((pre, cur) => pre[1].length < cur[1].length ? cur : pre);
         return (
             <div className={this.props.className}>
                 <div className="text">{this.props.text}</div>
@@ -430,12 +527,12 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
                             onBlur={this.handleClick.bind(this, null) }
                             style={{ top: this.state.visible ? -0.8 * this.state.active + 'em' : 0 }}>
                             <ul>
-                                {this.props.entries.map((value, index) =>
+                                {this.props.selectorMap.map((value) =>
                                     <DropDownEntry
                                         visible={this.state.visible ? true : false}
-                                        active={index == this.state.active ? true : false}
-                                        text={value}
-                                        clicked={this.handleClick.bind(this, index) }/>
+                                        active={value[0] == this.state.active ? true : false}
+                                        text={value[1]}
+                                        clicked={this.handleClick.bind(this, value[0]) }/>
                                 ) }
                             </ul>
                         </div>
@@ -456,6 +553,7 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
                 console.log("onClick()");
                 state.visible = false;
                 state.active = index;
+                this.props.setter(index);
             } else {
                 console.log("onShow()");
                 state.visible = true;
@@ -627,16 +725,25 @@ class VolumeSlider extends React.Component<VolumeSliderProps, any> {
 }
 
 interface MenuEntryProps {
-    collection: Playlist;
     title: string;
+    view: ViewState;
     viewState: ViewState;
     viewControl: any;
 }
 function MenuEntry(props: MenuEntryProps) {
     let state = "inactive";
-    if (props.viewState == ViewState[props.title]) {
+    if (props.viewState == props.view) {
         state = "active";
     }
+    return (
+        <div className={"menuEntry " + state} onClick={() => props.viewControl(props.view) } >
+            <img className="entryArt" src="album.png" ></img>
+            <div className="entryText">{props.title}</div>
+        </div>
+    );
+}
+
+function getLocalized(keyword: string) {
     let titleDict = {
         albums: "Alben",
         artists: "Künstler",
@@ -645,12 +752,7 @@ function MenuEntry(props: MenuEntryProps) {
         settings: "Einstellungen",
         queue: "Aktuelle Wiedergabe",
     };
-    return (
-        <div className={"menuEntry " + state}>
-            <img className="entryArt" src="album.png" ></img>
-            <div className="entryText" onClick={() => props.viewControl(ViewState[props.title]) } >{titleDict[props.title]}</div>
-        </div>
-    );
+    return (titleDict[keyword])
 }
 
 interface MenuPaneProps {
@@ -660,14 +762,15 @@ interface MenuPaneProps {
 }
 class MenuPane extends React.Component<MenuPaneProps, any> {
     render() {
+        let titleArray = ["albums", "songs", "queue"];
         return (
             <div className="menuPane">
-                {Object.keys(this.props.collections).map((e) =>
+                {titleArray.map((entry) =>
                     <MenuEntry
                         viewControl={this.props.viewControl}
                         viewState={this.props.viewState}
-                        title={e}
-                        collection={this.props.collections ? this.props.collections[e] : null}
+                        title={getLocalized(entry) }
+                        view={ViewState[entry]}
                         />
                 ) }
             </div>
@@ -703,9 +806,22 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
 
     componentDidMount() {
         ipcRenderer.send('asynchronous-message', this.state.viewState)
-        ipcRenderer.on('asynchronous-reply', (event, collections) => {
+        ipcRenderer.on('asynchronous-reply', (event, collections: string) => {
             let state = this.state;
             state.collections = JSON.parse(collections);
+            let sorted = state.collections.albums.items.sort((n1, n2) => {
+                if (n1.title > n2.title) {
+                    return 1;
+                }
+
+                if (n1.title < n2.title) {
+                    return -1;
+                }
+
+                return 0;
+            });
+            console.log(sorted);
+            state.collections.albums.items = sorted;
             this.setState(state);
         });
     }
@@ -714,9 +830,9 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         return (
             <div className="windowRoot">
                 <div className="windowLeftPane">
-                    {<MenuPane 
-                        collections={this.state.collections} 
-                        viewState={this.state.viewState} 
+                    {<MenuPane
+                        collections={this.state.collections}
+                        viewState={this.state.viewState}
                         viewControl={this.viewControl.bind(this) }/>}
                 </div>
                 <div className="windowRightPane">
@@ -724,20 +840,21 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                         console.log("State:", this.state.viewState)
                         switch (this.state.viewState) {
                             case ViewState.albums:
-                                return (<AlbumView 
-                                    playNode={this.playNode.bind(this) } 
-                                    addNode={this.addNode.bind(this) } 
+                                return (<AlbumView
+                                    playNode={this.playNode.bind(this) }
+                                    addNode={this.addNode.bind(this) }
                                     collection={this.state.collections.albums}/>);
                             case ViewState.artists:
-                                return (<AlbumView 
-                                    playNode={this.playNode.bind(this) } 
-                                    addNode={this.addNode.bind(this) } 
-                                    collection={this.state.collections.albums}/>);
+                                break;
                             case ViewState.songs:
-                                return (<SongView 
-                                    playNode={this.playNode.bind(this) } 
-                                    addNode={this.addNode.bind(this) } 
+                                return (<SongView
+                                    playNode={this.playNode.bind(this) }
+                                    addNode={this.addNode.bind(this) }
                                     collection={this.state.collections.songs}/>);
+                            case ViewState.settings:
+                                break;
+                            case ViewState.queue:
+                                break;
                         }
                     })() }
 
@@ -769,13 +886,6 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         state.queue.items.push(item);
         console.log(state.queue);
         this.setState(state);
-    }
-
-    playTrack(track: Track) {
-        this.state.audioPlayer.src = track.uri;
-        this.state.audioPlayer.play();
-        this.state.audioState = PlayStatus.play;
-        this.forceUpdate();
     }
 
     togglePlay() {
