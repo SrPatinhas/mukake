@@ -1,6 +1,7 @@
+///<reference path="typings/index.d.ts"/>
 import {app, BrowserWindow} from 'electron';
 import {ipcMain} from 'electron';
-import {recursiveReaddirSync, buildLibrary} from '../meta'
+import {recursiveReaddirSync, buildLibrary} from './meta'
 
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -19,7 +20,7 @@ function createWindow() {
   });
 
   // and load the index.html of the app.
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadURL(`file://${__dirname}/app/index.html`)
 
   // Open the DevTools.
   win.webContents.openDevTools()

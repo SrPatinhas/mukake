@@ -1,69 +1,102 @@
+///<reference path="../typings/index.d.ts"/>
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {ipcRenderer} from 'electron';
-import {ViewState, Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
+import {ViewState, Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from '../types';
 
 function findRightmostLeaf(node: PlaylistNode): number[] {
-    if (isTrack(node)) {
-        return [];
+    let findRightmostLeaf = (node: PlaylistNode) => {
+        if (!node) {
+            return null;
+        }
+        if (isTrack(node)) {
+            return [];
+        }
+        if (isPlaylist(node)) {
+            let last = node.items.length - 1;
+            return [last].concat(findRightmostLeaf(node.items[last]))
+        }
     }
-    if (isPlaylist(node)) {
-        let last = node.items.length - 1;
-        return [last].concat(findRightmostLeaf(node.items[last]))
+    let result = findRightmostLeaf(node);
+    if (result && result[result.length - 1] == null) {
+        return null;
     }
+    return result;
 }
 function findLeftmostLeaf(node: PlaylistNode): number[] {
-    if (isTrack(node)) {
-        return [];
+    let findLeftmostLeaf = (node: PlaylistNode) => {
+        if (!node) {
+            return null;
+        }
+        if (isTrack(node)) {
+            return [];
+        }
+        if (isPlaylist(node)) {
+            return [0].concat(findLeftmostLeaf(node.items[0]))
+        }
     }
-    if (isPlaylist(node)) {
-        return [0].concat(findLeftmostLeaf(node.items[0]))
+    let result = findLeftmostLeaf(node);
+    if (result && result[result.length - 1] == null) {
+        return null;
     }
+    return result;
 }
 
 function findPreviousTrack(playlist: Playlist, state: number[]): number[] {
-
-    let parentState = state.slice(0, -1);
-    let parentNode = getPlaylistNode(playlist, parentState);
-    let parentPosition = state[state.length - 1];
-    // is there a next track on this level? return next track else call self on parent level
-    if (isPlaylist(parentNode) && 0 <= (parentPosition - 1)) {
-        let item = parentNode.items[parentPosition - 1]
-        if (isTrack(item)) {
-            return parentState.concat([parentPosition - 1]);
+    let findPreviousTrack = (playlist: Playlist, state: number[]) => {
+        let parentState = state.slice(0, -1);
+        let parentNode = getPlaylistNode(playlist, parentState);
+        let parentPosition = state[state.length - 1];
+        // is there a next track on this level? return next track else call self on parent level
+        if (isPlaylist(parentNode) && 0 <= (parentPosition - 1)) {
+            let item = parentNode.items[parentPosition - 1]
+            if (isTrack(item)) {
+                return parentState.concat([parentPosition - 1]);
+            }
+            if (isPlaylist(item)) {
+                return parentState.concat([parentPosition - 1], findRightmostLeaf(item));
+            }
         }
-        if (isPlaylist(item)) {
-            return parentState.concat([parentPosition - 1], findRightmostLeaf(item));
+        else if (isPlaylist(parentNode) && parentState.length > 0) {
+            return findPreviousTrack(playlist, parentState);
+        }
+        else if (isPlaylist(parentNode) && parentState.length == 0) {
+            return findRightmostLeaf(parentNode);
         }
     }
-    else if (isPlaylist(parentNode) && parentState.length > 0) {
-        return findPreviousTrack(playlist, parentState);
+    let result = findPreviousTrack(playlist, state);
+    if (result && result[result.length - 1] == null) {
+        return null;
     }
-    else if (isPlaylist(parentNode) && parentState.length == 0) {
-        return findRightmostLeaf(parentNode);
-    }
+    return result;
 }
 function findNextTrack(playlist: Playlist, state: number[]): number[] {
-
-    let parentState = state.slice(0, -1);
-    let parentNode = getPlaylistNode(playlist, parentState);
-    let parentPosition = state[state.length - 1];
-    // is there a next track on this level? return next track else call self on parent level
-    if (isPlaylist(parentNode) && parentNode.items.length > (parentPosition + 1)) {
-        let item = parentNode.items[parentPosition + 1]
-        if (isTrack(item)) {
-            return parentState.concat([parentPosition + 1]);
+    let findNextTrack = (playlist: Playlist, state: number[]) => {
+        let parentState = state.slice(0, -1);
+        let parentNode = getPlaylistNode(playlist, parentState);
+        let parentPosition = state[state.length - 1];
+        // is there a next track on this level? return next track else call self on parent level
+        if (isPlaylist(parentNode) && parentNode.items.length > (parentPosition + 1)) {
+            let item = parentNode.items[parentPosition + 1]
+            if (isTrack(item)) {
+                return parentState.concat([parentPosition + 1]);
+            }
+            if (isPlaylist(item)) {
+                return parentState.concat([parentPosition + 1], findLeftmostLeaf(item));
+            }
         }
-        if (isPlaylist(item)) {
-            return parentState.concat([parentPosition + 1], findLeftmostLeaf(item));
+        else if (isPlaylist(parentNode) && parentState.length > 0) {
+            return findNextTrack(playlist, parentState);
+        }
+        else if (isPlaylist(parentNode) && parentState.length == 0) {
+            return findLeftmostLeaf(parentNode);
         }
     }
-    else if (isPlaylist(parentNode) && parentState.length > 0) {
-        return findNextTrack(playlist, parentState);
+    let result = findNextTrack(playlist, state);
+    if (result && result[result.length - 1] == null) {
+        return null;
     }
-    else if (isPlaylist(parentNode) && parentState.length == 0) {
-        return findLeftmostLeaf(parentNode);
-    }
+    return result;
 }
 
 function getPlaylistNode(node: PlaylistNode, state: number[]): PlaylistNode {
@@ -193,23 +226,17 @@ class AlbumList extends React.Component<AlbumListProps, any> {
     }
 
     renderSwitch() {
-        console.log("renderSwitch:", this.props.sort);
         switch (this.props.sort) {
             case Sorts.byArtist:
-                console.log("Artist");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierArtist)));
             case Sorts.byTitle:
-                console.log("Album");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierTitleChar)));
             case Sorts.bySong:
-                console.log("Song");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierSong)));
             case Sorts.byDate:
-                console.log("Date");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierDate)));
             case Sorts.byFileDate:
             case Sorts.byDefault:
-                console.log("Default");
                 return (this.renderUnsorted());
         };
     }
@@ -276,29 +303,46 @@ let filterSortString = {
     filterDefault: "Default"
 }
 
-interface AlbumViewProps {
-    playNode: any;
-    addNode: any;
-    collection: Playlist;
+interface SortViewProps {
+    loadState: () => void;
+    saveState: (state: {}) => {};
 }
-interface AlbumViewState {
+interface SortViewState {
     sort: Sorts;
-    filter: Filters
 }
-class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
-    state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
+abstract class SortView<P extends SortViewProps, S extends SortViewState> extends React.Component<P, S> {
+    constructor(props?: P, context?: S) {
+        super();
+    }
+    componentDidMount() {
+        let savedState = this.props.loadState();
+        (Object as any).assign(this.state, savedState);
+        this.forceUpdate();
+    }
+    componentDidUpdate() {
+        this.props.saveState(this.state);
+    }
     setSorts(sort: Sorts) {
-        console.log("new sort: ", sort);
         this.state.sort = sort;
+        this.props.saveState(this.state)
         this.forceUpdate();
     }
     setFilters() {
         return null;
     }
+}
+interface AlbumViewProps extends SortViewProps {
+    playNode: any;
+    addNode: any;
+    collection: Playlist;
+}
+interface AlbumViewState extends SortViewState { }
+class AlbumView extends SortView<AlbumViewProps, AlbumViewState> {
+    state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
     render() {
         return (
             <div className="view albumView">
-                <h1 className="viewTitel">{getLocalized("songs") }</h1>
+                <h1 className="viewTitel">{getLocalized("albums") }</h1>
                 <div className="viewMenu">
                     <div className="playAll">Alle Wiedergeben</div>
                     <DropDownSelector
@@ -334,29 +378,18 @@ class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
     }
 }
 
-interface SongViewProps {
+interface SongViewProps extends SortViewProps {
     playNode: any;
     addNode: any;
     collection: Playlist;
 }
-interface SongViewState {
-    sort: Sorts;
-    filter: Filters;
-}
-class SongView extends React.Component<SongViewProps, SongViewState> {
+interface SongViewState extends SortViewState { }
+class SongView extends SortView<SongViewProps, SongViewState> {
     state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
-    setSorts(sort: Sorts) {
-        console.log("new sort: ", sort);
-        this.state.sort = sort;
-        this.forceUpdate();
-    }
-    setFilters() {
-        return null;
-    }
     render() {
         return (
             <div className="view albumView">
-                <h1 className="viewTitel">{getLocalized("albums") }</h1>
+                <h1 className="viewTitel">{getLocalized("songs") }</h1>
                 <div className="viewMenu">
                     <div className="playAll">Alle Wiedergeben</div>
                     <DropDownSelector
@@ -414,7 +447,7 @@ function identifierSong(node: PlaylistNode): string {
     return identifierFirstChar("title", node);
 }
 function identifierDate(node: PlaylistNode): string {
-    return node["year"] == "Unknown" ? 0 : node["year"];
+    return node["year"].toString();
 }
 
 function sortByAlphabet(identifier: any, items: PlaylistNode[]): SortedCollection {
@@ -431,7 +464,6 @@ function sortByAlphabet(identifier: any, items: PlaylistNode[]): SortedCollectio
         }
     }
     keys.sort();
-    console.log("sortByAlphabet", { keys: keys, sections: sections });
     return { keys: keys, sections: sections };
 }
 
@@ -452,7 +484,7 @@ class SongList extends React.Component<SongListProps, any> {
                         <div className="index">{entry}</div>
                         <div className="entries">
                             {sortedCollection.sections[entry].map((element: Track, indexB) => (
-                                <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id"+indexA+"-"+indexB}/>))
+                                <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id" + indexA + "-" + indexB}/>))
                             }
                         </div>
                     </div>
@@ -466,28 +498,22 @@ class SongList extends React.Component<SongListProps, any> {
 
     renderUnsorted() {
         return this.props.collection.items.map((element: Track, indexA) =>
-            <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id"+indexA}/>
+            <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id" + indexA}/>
         );
     }
 
     renderSwitch() {
-        console.log("renderSwitch:", this.props.sort);
         switch (this.props.sort) {
             case Sorts.byArtist:
-                console.log("Artist");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierArtist)));
             case Sorts.byAlbum:
-                console.log("Album");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierAlbum)));
             case Sorts.bySong:
-                console.log("Song");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierSong)));
             case Sorts.byDate:
-                console.log("Date");
                 return (this.renderSorted(sortByAlphabet.bind(undefined, identifierDate)));
             case Sorts.byFileDate:
             case Sorts.byDefault:
-                console.log("Default");
                 return (this.renderUnsorted());
         };
     }
@@ -510,7 +536,14 @@ interface SongEntryProps {
     addNode: any;
     id?: string;
 }
-
+function formatSeconds(input: number) {
+    var minutes = Math.floor(input / 60);
+    var seconds = input % 60;
+    return (
+        (minutes < 10 ? "0" : "") + minutes + ':' +
+        (seconds < 10 ? "0" : "") + seconds
+    );
+}
 class SongEntry extends React.Component<SongEntryProps, any> {
     render() {
         return (
@@ -528,7 +561,7 @@ class SongEntry extends React.Component<SongEntryProps, any> {
                 <div className="artist">{this.props.song.artist}</div>
                 <div className="album">{this.props.song.album}</div>
                 <div className="year">{this.props.song.year}</div>
-                <div className="duration">{"Unknown"}</div>
+                <div className="duration">{formatSeconds(this.props.song.duration) }</div>
             </div>
         );
     }
@@ -596,7 +629,7 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
                             tabIndex="-1"
                             ref="dropdown"
                             onBlur={this.handleClick.bind(this, null) }
-                            style={{ top: this.state.visible ? -0.8 * this.state.active + 'em' : 0 }}>
+                            style={{ top: this.state.visible ? -0.5 * this.state.active + 'em' : 0 }}>
                             <ul>
                                 {this.props.selectorMap.map((value) =>
                                     <DropDownEntry
@@ -616,17 +649,14 @@ class DropDownSelector extends React.Component<DropDownSelectorProps, DropDownSe
     handleClick(index) {
         let state = this.state;
         if (index == null) {
-            console.log("onBlur()");
             state.visible = false;
             this.setState(state);
         } else {
             if (state.visible) {
-                console.log("onClick()");
                 state.visible = false;
                 state.active = index;
                 this.props.setter(index);
             } else {
-                console.log("onShow()");
                 state.visible = true;
             }
         }
@@ -665,6 +695,8 @@ interface PlayerIndicatorState {
     current: number;
     duration: number;
     volumeState: boolean;
+    volumeValue: number;
+    volumeMute: boolean;
 }
 
 class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndicatorState> {
@@ -672,6 +704,8 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         current: 0,
         duration: 0,
         volumeState: false,
+        volumeValue: 1.0,
+        volumeMute: false,
     };
 
     componentDidMount() {
@@ -701,9 +735,43 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         });
 
     }
+    volumeControl(command: VolumeControl, value?: number) {
+        switch (command) {
+            case VolumeControl.toggle:
+                console.log("Command:", "Toggle");
+                if (this.state.volumeMute) {
+                    this.state.volumeMute = false;
+                    this.props.audioPlayer.volume = this.state.volumeValue;
+                } else {
+                    this.state.volumeMute = true;
+                    this.props.audioPlayer.volume = 0;
+                }
+                break;
+            case VolumeControl.set:
+                console.log("Command:", "Set(" + value + ")");
+                this.state.volumeMute = false;
+                this.state.volumeValue = value;
+                this.props.audioPlayer.volume = value;
+                break;
+            case VolumeControl.mute:
+                console.log("Command:", "Mute");
+                this.state.volumeMute = true;
+                this.props.audioPlayer.volume = 0;
+                break;
+            case VolumeControl.unmute:
+                console.log("Command:", "Unmute");
+                this.state.volumeMute = false;
+                this.props.audioPlayer.volume = this.state.volumeValue;
+                break;
+            case VolumeControl.getValue:
+                return this.state.volumeValue;
+            case VolumeControl.getMute:
+                return this.state.volumeMute ? 1 : 0;
+        }
+    }
 
     toggleVolumeSlider() {
-        console.log("toggling")
+        console.log("VolumeSlider:", "toggle");
         let state = this.state;
         if (state.volumeState) {
             state.volumeState = false;
@@ -713,7 +781,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         this.setState(state);
     }
     hideVolumeSlider() {
-        console.log("hiding now!");
+        console.log("VolumeSlider:", "hide");
         let state = this.state;
         state.volumeState = false;
         this.setState(state);
@@ -759,38 +827,70 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
                     </div>
                     <div className="controls">
                         <div className="previous button" onClick={() => { this.props.playerControl(PlayerControl.previous) } }><i className="fa fa-step-backward" aria-hidden="true"></i></div>
-                        <div className="playStatus button" onClick={() => { this.props.playerControl(PlayerControl.toggle) } }>{this.getPlayText() }</div>
+                        <div className="playStatus button" onClick={() => { this.props.playerControl(PlayerControl.toggle) } }><PlayIcon audioState={this.props.audioState}/></div>
                         <div className="next button" onClick={() => { this.props.playerControl(PlayerControl.next) } }><i className="fa fa-step-forward" aria-hidden="true"></i></div>
-                        <div className="volume button" onClick={(event: any) => { this.toggleVolumeSlider() } }><i className="fa fa-volume-up" aria-hidden="true"></i></div>
+                        <div className="volume button" onClick={(event: any) => { this.toggleVolumeSlider() } }><VolumeIcon volumeControl={this.volumeControl.bind(this) } /></div>
                         <div className="repeat button"><i className="fa fa-repeat" aria-hidden="true"></i></div>
                         <div className="random button"><i className="fa fa-random" aria-hidden="true"></i></div>
                     </div>
                 </div>
-                {(this.state.volumeState) ? <VolumeSlider audioPlayer={this.props.audioPlayer} hide={this.hideVolumeSlider.bind(this) }/> : null}
+                {(this.state.volumeState) ? <VolumeSlider audioPlayer={this.props.audioPlayer} hide={this.hideVolumeSlider.bind(this) } volumeControl={this.volumeControl.bind(this) }/> : null}
             </div>
         )
     }
 }
 
+enum VolumeControl {
+    toggle,
+    set,
+    unmute,
+    mute,
+    getValue,
+    getMute,
+}
+function VolumeIcon(props: any) {
+    if (props.volumeControl(VolumeControl.getMute) == 1) {
+        return <i className="fa fa-volume-off fa-lg" aria-hidden="true" ></i>
+    }
+    if (props.volumeControl(VolumeControl.getValue) > 0.4) {
+        return <i className="fa fa-volume-up fa-lg" aria-hidden="true" ></i>
+    } else {
+        return <i className="fa fa-volume-down fa-lg" aria-hidden="true" ></i>
+    }
+}
+function PlayIcon(props: any) {
+    switch (props.audioState) {
+        case PlayStatus.play:
+            return (<i className="fa fa-pause" aria-hidden="true"></i>);
+        default:
+            return (<i className="fa fa-play" aria-hidden="true"></i>);
+    }
+}
 interface VolumeSliderProps {
     audioPlayer: HTMLAudioElement;
+    volumeControl: any;
     hide: any;
 }
 class VolumeSlider extends React.Component<VolumeSliderProps, any> {
 
     componentDidMount() {
-        (ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
+        //(ReactDOM.findDOMNode(this.refs["volumeSlider"]) as HTMLDivElement).focus();
     }
 
     render() {
         let volume = Math.floor(this.props.audioPlayer.volume * 100);
         return (
-            <div className="volumeSlider">
-                <div><i className="fa fa-volume-up fa-lg" aria-hidden="true"></i></div>
-                <div className="volumeTrack">
-                    <input type="range" className="slider" tabIndex="-1" ref="volumeSlider" onBlur={this.props.hide} min="0" max="100" value={volume} onChange={(event: any) => (this.props.audioPlayer.volume = (event.target.value / 100)) }></input>
-                </div>
-            </div >
+            <div className="volumeSliderWrapper">
+                <div className="blurSpace" onClick={this.props.hide}></div>
+                <div className="volumeSlider" tabIndex="-1" ref="volumeSlider">
+                    <div onClick={() => this.props.volumeControl(VolumeControl.toggle) }>
+                        <VolumeIcon volumeControl={this.props.volumeControl} />
+                    </div>
+                    <div className="volumeTrack">
+                        <input type="range" className="slider" min="0" max="100" value={volume} onChange={(event: any) => (this.props.volumeControl(VolumeControl.set, event.target.value / 100)) }></input>
+                    </div>
+                </div >
+            </div>
         );
     }
 }
@@ -858,6 +958,7 @@ interface MukakePlayerState {
     queue: Playlist;
     queueState: number[];
     viewState: ViewState;
+    savedStates: {};
 }
 class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState> {
     state: MukakePlayerState;
@@ -871,7 +972,8 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
             collections: { albums: null, artists: null, songs: null, playlists: null },
             viewState: ViewState.songs,
             queue: emptyQueue,
-            queueState: []
+            queueState: [],
+            savedStates: {},
         }
     }
 
@@ -880,19 +982,6 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         ipcRenderer.on('asynchronous-reply', (event, collections: string) => {
             let state = this.state;
             state.collections = JSON.parse(collections);
-            let sorted = state.collections.albums.items.sort((n1, n2) => {
-                if (n1.title > n2.title) {
-                    return 1;
-                }
-
-                if (n1.title < n2.title) {
-                    return -1;
-                }
-
-                return 0;
-            });
-            console.log(sorted);
-            state.collections.albums.items = sorted;
             this.setState(state);
         });
     }
@@ -908,20 +997,23 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 </div>
                 <div className="windowRightPane">
                     {(() => {
-                        console.log("State:", this.state.viewState)
                         switch (this.state.viewState) {
                             case ViewState.albums:
                                 return (<AlbumView
                                     playNode={this.playNode.bind(this) }
                                     addNode={this.addNode.bind(this) }
-                                    collection={this.state.collections.albums}/>);
+                                    collection={this.state.collections.albums}
+                                    saveState={this.saveState.bind(this, "AlbumView") }
+                                    loadState={this.loadState.bind(this, "AlbumView") }/>);
                             case ViewState.artists:
                                 break;
                             case ViewState.songs:
                                 return (<SongView
                                     playNode={this.playNode.bind(this) }
                                     addNode={this.addNode.bind(this) }
-                                    collection={this.state.collections.songs}/>);
+                                    collection={this.state.collections.songs}
+                                    saveState={this.saveState.bind(this, "SongView") }
+                                    loadState={this.loadState.bind(this, "SongView") }/>);
                             case ViewState.settings:
                                 break;
                             case ViewState.queue:
@@ -941,6 +1033,13 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         );
     }
 
+    saveState(component: string, state: {}) {
+        this.state.savedStates[component] = state;
+    }
+    loadState(component: string): {} {
+        return this.state.savedStates[component];
+    }
+
     playNode(item: PlaylistNode) {
         this.state.queue.items = [item];
         this.state.queueState = [];
@@ -954,9 +1053,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
     }
     addNode(item: PlaylistNode) {
         let state = this.state;
-        console.log(state.queue);
         state.queue.items.push(item);
-        console.log(state.queue);
         this.setState(state);
     }
 
@@ -965,12 +1062,10 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         switch (state.audioState) {
             case PlayStatus.stop:
             case PlayStatus.pause:
-                this.state.audioPlayer.play();
-                state.audioState = PlayStatus.play;
+                this.playerControl(PlayerControl.play);
                 break;
             case PlayStatus.play:
-                this.state.audioPlayer.pause();
-                state.audioState = PlayStatus.pause;
+                this.playerControl(PlayerControl.pause);
                 break;
         }
         this.setState(state);
@@ -989,14 +1084,14 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         switch (action) {
             case PlayerControl.next:
                 currentState = findNextTrack(this.state.queue, this.state.queueState);
-                if (!currentState) {
+                if (null == currentState) {
                     currentState = findLeftmostLeaf(this.state.queue)
                 }
                 break;
             case PlayerControl.previous:
                 if (state.audioPlayer.currentTime < 4) {
                     currentState = findPreviousTrack(this.state.queue, this.state.queueState);
-                    if (!currentState) {
+                    if (null == currentState) {
                         currentState = findRightmostLeaf(this.state.queue)
                     }
                 } else {
@@ -1012,15 +1107,17 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 }
                 break;
             case PlayerControl.play:
-                this.state.audioPlayer.play();
-                state.audioState = PlayStatus.play;
+                if (this.state.audioPlayer.readyState) {
+                    this.state.audioPlayer.play();
+                    state.audioState = PlayStatus.play;
+                }
                 break;
             case PlayerControl.pause:
                 this.state.audioPlayer.pause();
                 state.audioState = PlayStatus.pause;
                 break;
         }
-        if (currentState) {
+        if (currentState != null) {
             state.queueState = currentState;
             track = getTrack(state.queue, state.queueState);
             state.audioPlayer.src = track.uri;
@@ -1028,8 +1125,6 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 state.audioPlayer.play();
             }
         }
-        console.log("Queue:", state.queue);
-        console.log("State:", state.queueState);
         this.setState(state);
     }
 }

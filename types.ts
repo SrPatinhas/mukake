@@ -18,6 +18,7 @@ export interface PlaylistNode {
     type: "playlist"|"track";
     title: string;
     artist: string;
+    year?: number;
     art?: any;
 }
 

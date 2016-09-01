@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as musicmetadata from 'musicmetadata';
-import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './app/types';
+import {PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from './types';
 
 
 process.on('unhandledRejection', function (reason, p) {
@@ -44,7 +44,7 @@ interface Album {
 
 function musicmetadatawrapper(filename: string): Promise<any> {
     return new Promise((resolve, reject) => {
-        musicmetadata(fs.createReadStream(filename), (error, metadata) => {
+        musicmetadata(fs.createReadStream(filename), { duration: true }, (error, metadata) => {
             if (error) {
                 reject(error);
                 return;
@@ -97,7 +97,7 @@ export function buildLibrary(fileList) {
                 albumArtist = artist;
                 console.log("Artist:", artist);
             }
-            if (metadata.albumArtist) {
+            if ((metadata.albumartist as string[]).length) {
                 albumArtist = metadata.albumartist;
                 hasArtist = true;
                 console.log("AlbumArtist:", albumArtist);

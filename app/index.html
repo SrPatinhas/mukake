@@ -30,15 +30,21 @@
     }
     
     .windowRoot {
+      height: 100vh;
       display: flex;
+      overflow: hidden;
     }
     
     .windowLeftPane {
       flex: 0 0 var(--menu-width);
+      height: 100vh;
+      overflow: auto;
     }
     
     .windowRightPane {
       flex-grow: 1;
+      height: 100vh;
+      overflow: auto;
     }
     
     .menuPane {
@@ -121,7 +127,7 @@
     }
     
     .viewMenu .dropdownWrapper .helper {
-      position: absolute;
+      -position: absolute;
     }
     
     .viewMenu .dropdown {
@@ -183,11 +189,13 @@
     .viewList {
       display: flex;
       flex-flow: row wrap;
+      padding: 2mm 0 17mm 0;
     }
     
     .viewList .index {
       color: var( --base-tone);
       font-size: 1.4em;
+      padding: 2em 0 .5em 0;
     }
     /* Songs View List*/
     
@@ -202,7 +210,7 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      padding: 1mm 2mm 1mm 2mm;
+      padding: 1em;
     }
     
     .viewList.songs .entry:nth-child(odd) {
@@ -259,6 +267,19 @@
       transition: opacity 0.1s;
     }
     
+    .viewList.songs .selector > [type="checkbox"] + label {
+      opacity: 0;
+    }
+    
+    .viewList.songs .entry:hover [type="checkbox"] + label {
+      opacity: 1;
+      transition: opacity 0.1s;
+    }
+    
+    .viewList.songs [type="checkbox"]:checked + label {
+      opacity: 1 !important;
+    }
+    
     .viewList.songs .entry .text > div:last-child {
       padding-right: 0;
     }
@@ -303,14 +324,19 @@
       flex-flow: column;
     }
     
+    .viewList.albums .sorted .entries {
+      display: flex;
+      flex-flow: row wrap;
+    }
+    
     .viewList.albums .unsorted {
       display: flex;
       flex-flow: row wrap;
     }
     
     .viewList.albums .entry {
-      width: 4cm;
-      height: 6cm;
+      width: 37mm;
+      height: 55mm;
       padding: 1.5mm;
       padding-bottom: 5mm;
     }
@@ -324,8 +350,8 @@
     }
     
     .viewList.albums .entry .art img {
-      width: 4cm;
-      height: 4cm;
+      width: 37mm;
+      height: 37mm;
     }
     
     .viewList.albums .controls {
@@ -510,7 +536,18 @@
     }
     /* Volume Slider */
     
+    .blurSpace {
+      width: 100vw;
+      height: 100vh;
+      background: rgba(128, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    
     .volumeSlider {
+      position: relative;
       box-sizing: border-box;
       display: flex;
       flex-wrap: nowrap;
@@ -519,6 +556,7 @@
       width: 8cm;
       margin-bottom: -2mm;
       border: 1px solid grey;
+      z-index: 1;
     }
     
     .volumeSlider:focus {
@@ -531,7 +569,10 @@
     }
     
     .volumeSlider > div:first-child {
-      padding: 0 0 0 4mm;
+      padding: 0 4mm 0 4mm;
+      height: 10mm;
+      display: flex;
+      align-items: center;
     }
     
     .volumeSlider > div:last-child {
@@ -549,7 +590,8 @@
     }
     
     .volumeTrack input[type=range] {
-      padding: 1mm 4mm 1mm 4mm;
+      padding: 0 4mm 0 0;
+      height: 12mm;
     }
     /* Base for label styling */
     
@@ -626,6 +668,23 @@
     
     label:hover:before {
       border: 1px solid var(--base-tone)!important;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 2.5mm;
+    }
+    
+    ::-webkit-scrollbar-track:vertical {
+      background: #222;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+    }
+    
+    ::-webkit-scrollbar-corner {
+      background: yellow;
+      height: 17mm;
     }
   </style>
 </head>

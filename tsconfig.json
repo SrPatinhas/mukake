@@ -4,10 +4,10 @@
         "module": "commonjs"
     },
     "files": [
-        "./app/typings/index.d.ts",
-        "./custom.d.ts",
+        "./typings/index.d.ts",
         "./app/index.tsx",
-        "./app/main.ts",
+        "./custom.d.ts",
+        "./main.ts",
         "./meta.ts"
     ]
 }
