@@ -21,133 +21,89 @@ function findLeftmostLeaf(node: PlaylistNode): number[] {
     }
 }
 
-function navigateToPreviousTrack(playlist: Playlist, state: number[]): number[] {
-    let findPreviousTrack = (node: Playlist, state: number[]) => {
-        let firstNode = node.items[state[0]];
-        if (isTrack(firstNode)) {
-            if ((state[0] - 1) >= 0) {
-                return [state[0] - 1].concat(findRightmostLeaf(node.items[state[0] - 1]));
-            }
-            return null;
+function findPreviousTrack(playlist: Playlist, state: number[]): number[] {
+
+    let parentState = state.slice(0, -1);
+    let parentNode = getPlaylistNode(playlist, parentState);
+    let parentPosition = state[state.length - 1];
+    // is there a next track on this level? return next track else call self on parent level
+    if (isPlaylist(parentNode) && 0 <= (parentPosition - 1)) {
+        let item = parentNode.items[parentPosition - 1]
+        if (isTrack(item)) {
+            return parentState.concat([parentPosition - 1]);
         }
-        if (isPlaylist(firstNode)) {
-            let result = findPreviousTrack(firstNode, state.slice(1));
-            if (result == null && 0 <= state[0] - 1) {
-                result = findLeftmostLeaf(node.items[state[0] - 1]);
-                if (result == null) {
-                    return null
-                }
-                return [state[0] - 1].concat(result);
-            }
-            return [state[0]].concat(result);
+        if (isPlaylist(item)) {
+            return parentState.concat([parentPosition - 1], findRightmostLeaf(item));
         }
     }
-    return findPreviousTrack(playlist, state);
+    else if (isPlaylist(parentNode) && parentState.length > 0) {
+        return findPreviousTrack(playlist, parentState);
+    }
+    else if (isPlaylist(parentNode) && parentState.length == 0) {
+        return findRightmostLeaf(parentNode);
+    }
 }
-function navigateToNextTrack2(playlist: Playlist, state: number[]): number[] {
-    let findNextTrack = (node: Playlist, state: number[]): number[] => {
+function findNextTrack(playlist: Playlist, state: number[]): number[] {
 
-        let firstNode = node.items[state[0]];
-        if (isTrack(firstNode)) {
-            if ((state[0] + 1) < node.items.length) {
-                return [state[0] + 1].concat(findRightmostLeaf(node.items[state[0] + 1]));
-            }
-            return null;
+    let parentState = state.slice(0, -1);
+    let parentNode = getPlaylistNode(playlist, parentState);
+    let parentPosition = state[state.length - 1];
+    // is there a next track on this level? return next track else call self on parent level
+    if (isPlaylist(parentNode) && parentNode.items.length > (parentPosition + 1)) {
+        let item = parentNode.items[parentPosition + 1]
+        if (isTrack(item)) {
+            return parentState.concat([parentPosition + 1]);
         }
-        if (isPlaylist(firstNode)) {
-            let result = findNextTrack(firstNode, state.slice(1));
-            if (result == null) {
-                return null
-            }
-            return [state[0]].concat(result);
+        if (isPlaylist(item)) {
+            return parentState.concat([parentPosition + 1], findLeftmostLeaf(item));
         }
     }
-    return findNextTrack(playlist, state);
+    else if (isPlaylist(parentNode) && parentState.length > 0) {
+        return findNextTrack(playlist, parentState);
+    }
+    else if (isPlaylist(parentNode) && parentState.length == 0) {
+        return findLeftmostLeaf(parentNode);
+    }
 }
 
-function navigateToNextTrack(playlist: Playlist, state: number[]): number[] {
-    let findNextTrack = (node: Playlist, state: number[]): number[] => {
-        let firstNode = node.items[state[0]];
-        if (isTrack(firstNode)) {
-            if ((state[0] + 1) < node.items.length) {
-                return [state[0] + 1].concat(findLeftmostLeaf(node.items[state[0] + 1]));
-            }
-            return null;
-        }
-        if (isPlaylist(firstNode)) {
-            let result = findNextTrack(firstNode, state.slice(1));
-            if (result == null && node.items.length > state[0] + 1) {
-                result = findLeftmostLeaf(node.items[state[0] + 1]);
-                if (result == null) {
-                    return null
-                }
-                return [state[0] + 1].concat(result);
-            }
-            return [state[0]].concat(result);
+function getPlaylistNode(node: PlaylistNode, state: number[]): PlaylistNode {
+    if (isPlaylist(node) && state.length > 0) {
+        let item = node.items[state[0]];
+        if (isPlaylist(node)) {
+            return getPlaylistNode(item,state.slice(1));
         }
     }
-    return findNextTrack(playlist, state);
+    return node;
 }
 
-function navigateToPlaylistNode(playlist: Playlist, playlistState: number[]): PlaylistNode {
-    let iterate = (node: PlaylistNode, depth: number): PlaylistNode => {
-        if (depth < playlistState.length) {
-            if (isPlaylist(node)) {
-                let index = playlistState[depth];
-                if (index < node.items.length) {
-                    return iterate(node.items[index], ++depth);
-                }
-                return null;
-            }
-            return null;
-        }
+function getTrack(playlist: Playlist, playlistState: number[]): Track {
+    let node = getPlaylistNode(playlist, playlistState);
+    if (isTrack(node)) {
         return node;
-    };
-    return iterate(playlist, 0);
-}
-
-function navigateToTrack(playlist: Playlist, playlistState: number[]): Track {
-    let iterate = (node: PlaylistNode, depth: number): Track => {
-        if (isPlaylist(node) && depth < playlistState.length) {
-            return iterate(node.items[playlistState[depth]], ++depth);
-        }
-        if (isTrack(node)) {
-            return node;
-        }
-        return null;
-    };
-    let track: Track = iterate(playlist, 0);
-    return track;
-}
-
-function navigateToFirstTrack(playlist: PlaylistNode, state: number[]): Track {
-    let iterate = (node: PlaylistNode): Track => {
-        if (isPlaylist(node)) {
-            state.push(0);
-            return iterate(node.items[0]);
-        }
-        if (isTrack(node)) {
-            return node;
-        }
     }
-    return iterate(playlist);
 }
 
-function navigateToLastTrack(playlist: PlaylistNode, state: number[]): Track {
-    let iterate = (node: PlaylistNode): Track => {
-        if (isPlaylist(node)) {
-            state.push(node.items.length - 1);
-            return iterate(node.items[node.items.length - 1]);
-        }
-        if (isTrack(node)) {
-            return node;
-        }
+function getFirstTrack(node: PlaylistNode): Track  {
+    if (isTrack(node)) {
+        return node;
     }
-    return iterate(playlist);
+    if (isPlaylist(node)) {
+        return getTrack(node, findLeftmostLeaf(node));
+    }
 }
+
+function getLastTrack(node: PlaylistNode): Track  {
+    if (isTrack(node)) {
+        return node;
+    }
+    if (isPlaylist(node)) {
+        return getTrack(node, findRightmostLeaf(node));
+    }
+}
+
 
 function getArt(playlist: Playlist, playlistState: number[]): any {
-    let node = navigateToPlaylistNode(playlist, playlistState);
+    let node = getPlaylistNode(playlist, playlistState);
     if (node.art) {
         return "data:image/" + node.art.format + ";base64," + node.art.data;
     }
@@ -475,17 +431,6 @@ function SongList(props: SongListProps) {
             {
                 buildParts(props, sorted)
             }
-            {/*
-                (() => {
-                    if (props.collection) {
-                        return props.collection.items.map((element: Track) =>
-                            <SongEntry playNode={props.playNode} addNode={props.addNode} song={element}/>
-                        )
-                    } else {
-                        return [<div>Loading...</div>];
-                    }
-                })()
-            */}
         </div>
     );
 }
@@ -677,7 +622,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
             this.forceUpdate();
         });
         this.props.audioPlayer.addEventListener("ended", (event: any) => {
-            if (navigateToNextTrack(this.props.queue, this.props.queueState)) {
+            if (findNextTrack != findRightmostLeaf) {
                 this.props.playerControl(PlayerControl.next);
             } else {
                 this.props.playerControl(PlayerControl.pause);
@@ -717,7 +662,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         var artist: string = "";
         var art: string = "album.png";
         if (this.props.queueState && this.props.queue && this.props.queue.items.length) {
-            let node: Track = navigateToTrack(this.props.queue, this.props.queueState);
+            let node: Track = getTrack(this.props.queue, this.props.queueState);
             title = node.title;
             artist = node.artist;
             art = getArt(this.props.queue, this.props.queueState);
@@ -929,7 +874,8 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         this.state.queue.items = [item];
         this.state.queueState = [];
 
-        let track: Track = navigateToFirstTrack(this.state.queue, this.state.queueState);
+        this.state.queueState = findLeftmostLeaf(this.state.queue);
+        let track: Track = getTrack(this.state.queue, this.state.queueState);
         this.state.audioPlayer.src = track.uri;
         this.state.audioPlayer.play();
         this.state.audioState = PlayStatus.play;
@@ -971,14 +917,14 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         let currentState;
         switch (action) {
             case PlayerControl.next:
-                currentState = navigateToNextTrack(this.state.queue, this.state.queueState);
+                currentState = findNextTrack(this.state.queue, this.state.queueState);
                 if (!currentState) {
                     currentState = findLeftmostLeaf(this.state.queue)
                 }
                 break;
             case PlayerControl.previous:
                 if (state.audioPlayer.currentTime < 4) {
-                    currentState = navigateToPreviousTrack(this.state.queue, this.state.queueState);
+                    currentState = findPreviousTrack(this.state.queue, this.state.queueState);
                     if (!currentState) {
                         currentState = findRightmostLeaf(this.state.queue)
                     }
@@ -1005,12 +951,14 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         }
         if (currentState) {
             state.queueState = currentState;
-            track = navigateToTrack(state.queue, state.queueState);
+            track = getTrack(state.queue, state.queueState);
             state.audioPlayer.src = track.uri;
             if (state.audioState == PlayStatus.play) {
                 state.audioPlayer.play();
             }
         }
+        console.log("Queue:", state.queue);
+        console.log("State:", state.queueState);
         this.setState(state);
     }
 }
