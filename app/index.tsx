@@ -70,7 +70,7 @@ function getPlaylistNode(node: PlaylistNode, state: number[]): PlaylistNode {
     if (isPlaylist(node) && state.length > 0) {
         let item = node.items[state[0]];
         if (isPlaylist(node)) {
-            return getPlaylistNode(item,state.slice(1));
+            return getPlaylistNode(item, state.slice(1));
         }
     }
     return node;
@@ -83,7 +83,7 @@ function getTrack(playlist: Playlist, playlistState: number[]): Track {
     }
 }
 
-function getFirstTrack(node: PlaylistNode): Track  {
+function getFirstTrack(node: PlaylistNode): Track {
     if (isTrack(node)) {
         return node;
     }
@@ -92,7 +92,7 @@ function getFirstTrack(node: PlaylistNode): Track  {
     }
 }
 
-function getLastTrack(node: PlaylistNode): Track  {
+function getLastTrack(node: PlaylistNode): Track {
     if (isTrack(node)) {
         return node;
     }
@@ -156,9 +156,77 @@ interface AlbumListProps {
     playNode: any;
     addNode: any;
     collection: Playlist;
+    sort: Sorts;
+}
+class AlbumList extends React.Component<AlbumListProps, any> {
+    renderSorted(sortFunction: any) {
+        if (this.props.collection) {
+            let sortedCollection = sortFunction(this.props.collection.items);
+            return (
+                <div className="sorted">{
+                    sortedCollection.keys.map((entry) => (
+                        <div className="seperator">
+                            <div className="index">{entry}</div>
+                            <div className="entries">
+                                {sortedCollection.sections[entry].map((element: Playlist) => (
+                                    <AlbumEntry playNode={this.props.playNode} addNode={this.props.addNode} album={element}/>))
+                                }
+                            </div>
+                        </div>
+                    )) }
+                </div>
+            );
+        }
+        else {
+            return (<div>Loading...</div>);
+        }
+    }
+
+    renderUnsorted() {
+        return (
+            <div className="unsorted">{
+                this.props.collection.items.map((element: Playlist) =>
+                    <AlbumEntry playNode={this.props.playNode} addNode={this.props.addNode} album={element}/>
+                ) }
+            </div>
+        );
+    }
+
+    renderSwitch() {
+        console.log("renderSwitch:", this.props.sort);
+        switch (this.props.sort) {
+            case Sorts.byArtist:
+                console.log("Artist");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierArtist)));
+            case Sorts.byTitle:
+                console.log("Album");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierTitleChar)));
+            case Sorts.bySong:
+                console.log("Song");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierSong)));
+            case Sorts.byDate:
+                console.log("Date");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierDate)));
+            case Sorts.byFileDate:
+            case Sorts.byDefault:
+                console.log("Default");
+                return (this.renderUnsorted());
+        };
+    }
+    render() {
+        if (this.props.collection) {
+            return (
+                <div className="viewList albums">
+                    {this.renderSwitch() }
+                </div>
+            );
+        }
+        return (<div>Loading...</div>);
+    }
 }
 
-function AlbumList(props: AlbumListProps) {
+
+function AlbumList2(props: AlbumListProps) {
     return (
         <div className="viewList albums">
             {
@@ -176,14 +244,21 @@ function AlbumList(props: AlbumListProps) {
     );
 }
 
-interface AlbumViewProps {
-    playNode: any;
-    addNode: any;
-    collection: Playlist;
+enum Sorts {
+    byTitle,
+    bySong,
+    byAlbum,
+    byArtist,
+    byDate,
+    byFileDate,
+    byDefault
 }
-interface AlbumViewState {
-    sort: Sorts;
-    filter: Filters
+enum Filters {
+    filterA,
+    filterB,
+    filterC,
+    filterD,
+    filterDefault
 }
 let SortsString = {
     bySong: "Songname",
@@ -200,6 +275,16 @@ let filterSortString = {
     filterD: "filter D",
     filterDefault: "Default"
 }
+
+interface AlbumViewProps {
+    playNode: any;
+    addNode: any;
+    collection: Playlist;
+}
+interface AlbumViewState {
+    sort: Sorts;
+    filter: Filters
+}
 class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
     state = { sort: Sorts.byDefault, filter: Filters.filterDefault };
     setSorts(sort: Sorts) {
@@ -211,11 +296,6 @@ class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
         return null;
     }
     render() {
-        let sorted = null;
-        if (this.props.collection) {
-            sorted = Object.create(this.props.collection);
-            sorted.items = sortPlaylist.bind(this)(this.props.collection.items);
-        }
         return (
             <div className="view albumView">
                 <h1 className="viewTitel">{getLocalized("songs") }</h1>
@@ -248,60 +328,12 @@ class AlbumView extends React.Component<AlbumViewProps, AlbumViewState> {
                         default={this.state.filter}
                         setter={this.setFilters.bind(this) } />
                 </div>
-                <AlbumList collection={sorted} playNode={this.props.playNode} addNode={this.props.addNode}/>
+                <AlbumList sort={this.state.sort} collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode}/>
             </div>
         );
     }
 }
 
-function sortPlaylist(items: PlaylistNode[]): PlaylistNode[] {
-    let sortBy = (items: PlaylistNode[], sort: string): PlaylistNode[] => {
-        return items.sort((n1, n2) => {
-            if (n1[sort] > n2[sort]) {
-                return 1;
-            }
-
-            if (n1[sort] < n2[sort]) {
-                return -1;
-            }
-            return 0;
-        });
-    };
-
-    switch (this.state.sort) {
-        case Sorts.byTitle:
-        case Sorts.bySong:
-            return sortBy(items.slice(0), "title");
-        case Sorts.byArtist:
-            return sortBy(items.slice(0), "artist");
-        case Sorts.byAlbum:
-            return sortBy(items.slice(0), "album");
-        case Sorts.byDate:
-            return sortBy(items.slice(0), "year");
-        case Sorts.byFileDate:
-            return sortBy(items.slice(0), "title");
-        case Sorts.byDefault:
-            return items.slice(0);
-    };
-}
-
-
-enum Sorts {
-    byTitle,
-    bySong,
-    byAlbum,
-    byArtist,
-    byDate,
-    byFileDate,
-    byDefault
-}
-enum Filters {
-    filterA,
-    filterB,
-    filterC,
-    filterD,
-    filterDefault
-}
 interface SongViewProps {
     playNode: any;
     addNode: any;
@@ -322,11 +354,6 @@ class SongView extends React.Component<SongViewProps, SongViewState> {
         return null;
     }
     render() {
-        let sorted = null;
-        if (this.props.collection) {
-            sorted = Object.create(this.props.collection);
-            sorted.items = sortPlaylist.bind(this)(this.props.collection.items);
-        }
         return (
             <div className="view albumView">
                 <h1 className="viewTitel">{getLocalized("albums") }</h1>
@@ -360,11 +387,54 @@ class SongView extends React.Component<SongViewProps, SongViewState> {
                         default={this.state.filter}
                         setter={this.setFilters.bind(this) } />
                 </div>
-                <SongList collection={sorted} playNode={this.props.playNode} addNode={this.props.addNode} sort={this.state.sort}/>
+                <SongList collection={this.props.collection} playNode={this.props.playNode} addNode={this.props.addNode} sort={this.state.sort}/>
             </div>
         );
     }
 }
+
+interface SortedCollection {
+    keys: String[];
+    sections: {};
+}
+
+function identifierFirstChar(id: string, node: PlaylistNode): string {
+    return node[id].charAt(0).toUpperCase();
+}
+function identifierArtist(node: PlaylistNode): string {
+    return node["artist"]
+}
+function identifierAlbum(node: PlaylistNode): string {
+    return node["album"];
+}
+function identifierTitleChar(node: PlaylistNode): string {
+    return identifierFirstChar("title", node);
+}
+function identifierSong(node: PlaylistNode): string {
+    return identifierFirstChar("title", node);
+}
+function identifierDate(node: PlaylistNode): string {
+    return node["year"] == "Unknown" ? 0 : node["year"];
+}
+
+function sortByAlphabet(identifier: any, items: PlaylistNode[]): SortedCollection {
+    let keys = [];
+    let sections = {};
+    for (let node of items) {
+        let firstChar = identifier(node);
+        if (firstChar in sections) {
+            sections[firstChar].push(node);
+        }
+        else {
+            sections[firstChar] = [node];
+            keys.push(firstChar);
+        }
+    }
+    keys.sort();
+    console.log("sortByAlphabet", { keys: keys, sections: sections });
+    return { keys: keys, sections: sections };
+}
+
 interface SongListProps {
     playNode: any;
     addNode: any;
@@ -372,79 +442,80 @@ interface SongListProps {
     sort: Sorts;
 }
 
-function SongList(props: SongListProps) {
-    let sortAlphabetical = (items: PlaylistNode[]) => {
-        let sorted = {}
-        let sortedKeys = {};
-        for (let node of items) {
-            let char = node["title"].charAt(0).toUpperCase();
-            if (char in sortedKeys) {
-                console.log("Add:", node["title"])
-                sortedKeys[char].push(node);
-            }
-            else {
-                console.log("Create:", node["title"])
-                sortedKeys[char] = [node]
-            }
+class SongList extends React.Component<SongListProps, any> {
+    renderSorted(sortFunction: any) {
+        if (this.props.collection) {
+            let sortedCollection = sortFunction(this.props.collection.items);
+            return (
+                sortedCollection.keys.map((entry, indexA) => (
+                    <div className="seperator">
+                        <div className="index">{entry}</div>
+                        <div className="entries">
+                            {sortedCollection.sections[entry].map((element: Track, indexB) => (
+                                <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id"+indexA+"-"+indexB}/>))
+                            }
+                        </div>
+                    </div>
+                ))
+            );
         }
-        console.log(sortedKeys)
-        return sortedKeys;
-    };
-    let buildEntries = (nodes: PlaylistNode[]) => {
-        return nodes.map((element: Track) =>
-            <SongEntry playNode={props.playNode} addNode={props.addNode} song={element}/>
+        else {
+            return ([<div>Loading...</div>]);
+        }
+    }
+
+    renderUnsorted() {
+        return this.props.collection.items.map((element: Track, indexA) =>
+            <SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={element} id={"id"+indexA}/>
         );
     }
-    let buildParts = (props, sorted) => {
-        if (props.collection) {
-            switch (props.sort) {
-                case Sorts.bySong:
-                    let sortedKeys = Object.keys(sorted).sort();
-                    console.log("Keys:", sortedKeys);
-                    return sortedKeys.map((char) => (
-                        <div class="seperator"><div>{char}</div>
-                            <div>
-                                {buildEntries(sorted[char]) }
-                            </div>
-                        </div>
-                    )
-                    );
-                case Sorts.byDefault:
-                    return (
-                        [<div>Building...</div>]
-                    );
-            };
-        } else {
-            return [<div>Loading...</div>];
+
+    renderSwitch() {
+        console.log("renderSwitch:", this.props.sort);
+        switch (this.props.sort) {
+            case Sorts.byArtist:
+                console.log("Artist");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierArtist)));
+            case Sorts.byAlbum:
+                console.log("Album");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierAlbum)));
+            case Sorts.bySong:
+                console.log("Song");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierSong)));
+            case Sorts.byDate:
+                console.log("Date");
+                return (this.renderSorted(sortByAlphabet.bind(undefined, identifierDate)));
+            case Sorts.byFileDate:
+            case Sorts.byDefault:
+                console.log("Default");
+                return (this.renderUnsorted());
+        };
+    }
+    render() {
+        if (this.props.collection) {
+            return (
+                <div className="viewList songs">
+                    {this.renderSwitch() }
+                </div>
+            );
         }
+        return (<div>Loading...</div>);
     }
-
-
-
-    let sorted = {};
-    if (props.collection) {
-        sorted = sortAlphabetical(props.collection.items);
-        console.log("Sorted: ", sorted);
-    }
-    return (
-        <div className="viewList songs">
-            {
-                buildParts(props, sorted)
-            }
-        </div>
-    );
 }
+
+
 interface SongEntryProps {
     song: Track;
     playNode: any;
     addNode: any;
+    id?: string;
 }
 
 class SongEntry extends React.Component<SongEntryProps, any> {
     render() {
         return (
             <div className="entry">
-                <div className="selector"><input type="checkbox" name="your-group" value="unit-in-group" /></div>
+                <div className="selector"><input type="checkbox" id={this.props.id}/><label htmlFor={this.props.id}></label></div>
                 <div className="title">{this.props.song.title}</div>
                 <div className="controls">
                     <div className="wrapper">

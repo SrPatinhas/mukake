@@ -11,6 +11,7 @@
     :root {
       --menu-width: 8.25cm;
       --base-tone: #FF9F00;
+      --base-tone: hsla(24, 100%, 50%, 1.0);
     }
     
     body {
@@ -182,6 +183,11 @@
       display: flex;
       flex-flow: row wrap;
     }
+    
+    .viewList .index {
+      color: var( --base-tone);
+      font-size: 1.4em;
+    }
     /* Songs View List*/
     
     .viewList.songs {
@@ -289,7 +295,93 @@
       flex-grow: 1;
       flex-basis: 0;
     }
+    
+/* Base for label styling */
+[type="checkbox"]:not(:checked),
+[type="checkbox"]:checked {
+  position: absolute;
+  display: none;
+}
+[type="checkbox"]:not(:checked) + label,
+[type="checkbox"]:checked + label {
+  position: relative;
+  padding-left: 2em;
+  cursor: pointer;
+}
+
+/* checkbox aspect */
+[type="checkbox"]:not(:checked) + label:before,
+[type="checkbox"]:checked + label:before {
+  content: '';
+  position: absolute;
+  left:.1em; top: .1em;
+  width: 1.1em; height: 1.1em;
+  border: 1px solid #aaa;
+}
+/* checked mark aspect */
+[type="checkbox"]:not(:checked) + label:after,
+[type="checkbox"]:checked + label:after {
+  content: '✔';
+  position: absolute;
+  top: .22em; left: .3em;
+  font-size: 1.1em;
+  line-height: 0.8;
+  transition: all .2s;
+}
+/* checked mark aspect changes */
+[type="checkbox"]:not(:checked) + label:after {
+  opacity: 0;
+  transform: scale(1);
+}
+[type="checkbox"]:checked + label:after {
+  opacity: 1;
+  transform: scale(1);
+}
+/* disabled checkbox */
+[type="checkbox"]:disabled:not(:checked) + label:before,
+[type="checkbox"]:disabled:checked + label:before {
+  box-shadow: none;
+  border-color: #bbb;
+  background-color: #ddd;
+}
+[type="checkbox"]:disabled:checked + label:after {
+  color: #999;
+}
+[type="checkbox"]:disabled + label {
+  color: #aaa;
+}
+/* accessibility */
+[type="checkbox"]:checked:focus + label:before,
+[type="checkbox"]:not(:checked):focus + label:before {
+  border: 1px dotted var(--base-tone);
+}
+
+/* hover style just for information */
+label:hover:before {
+  border: 1px solid var(--base-tone)!important;
+}
+
+
+
+
+
+
+
+
+
+
+
     /* Albums View List */
+    
+    .viewList.albums .sorted {
+      display: flex;
+      flex-flow: column;
+    }
+    
+    .viewList.albums .unsorted {
+      display: flex;
+      flex-flow: row wrap;
+    }
     
     .viewList.albums .entry {
       width: 4cm;
