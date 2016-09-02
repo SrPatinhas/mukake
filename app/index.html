@@ -13,6 +13,7 @@
       --menu-width-collapsed: 1.2cm;
       --base-tone: #FF9F00;
       --base-tone: hsla(24, 100%, 50%, 1.0);
+      --base-tone-dark: hsla(24, 50%, 50%, 1.0);
     }
     
     body {
@@ -195,7 +196,39 @@
     .viewList .index {
       color: var( --base-tone);
       font-size: 1.4em;
-      padding: 2em 0 .5em 0;
+      padding: .5em 0 .5em 1em;
+    }
+    /* Queue View List */
+    
+    /*
+    .viewList.songs.queue .queue:nth-child(even) {
+      background: hsla(24, 0%, 8%, 1.0);
+      -border: .5mm solid #222;
+    }
+    
+    .viewList.songs.queue .queue:nth-child(odd) {
+      -background: hsla(24, 0%, 8%, 1.0);
+      -border: .5mm solid #333;
+    }
+    */
+    .viewList.queue .entry:nth-child(even) {
+      background: #222;
+    }
+    .viewList.queue .entry:nth-child(odd) {
+      background: #000!important;
+    }
+
+    .viewList.songs.queue .seperator {
+      margin: 1em 0 1em 0;
+      border-left: .5em solid #222;
+    }
+    
+    .viewList.songs.queue .seperator .index {
+      background: #222;
+    }
+    
+    .viewList.queue > .entries {
+      padding-top: 1em;
     }
     /* Songs View List*/
     

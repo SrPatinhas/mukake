@@ -344,7 +344,7 @@ class AlbumView extends SortView<AlbumViewProps, AlbumViewState> {
             <div className="view albumView">
                 <h1 className="viewTitel">{getLocalized("albums") }</h1>
                 <div className="viewMenu">
-                    <div className="playAll">Alle Wiedergeben</div>
+                    <div className="playAll" onClick={() => this.props.playNode(this.props.collection) }>Alle Wiedergeben</div>
                     <DropDownSelector
                         className="sortby"
                         text="Sortierung:"
@@ -391,7 +391,7 @@ class SongView extends SortView<SongViewProps, SongViewState> {
             <div className="view albumView">
                 <h1 className="viewTitel">{getLocalized("songs") }</h1>
                 <div className="viewMenu">
-                    <div className="playAll">Alle Wiedergeben</div>
+                    <div className="playAll" onClick={() => this.props.playNode(this.props.collection) }>Alle Wiedergeben</div>
                     <DropDownSelector
                         className="sortby"
                         text="Sortierung:"
@@ -802,9 +802,11 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
         var art: string = "album.png";
         if (this.props.queueState && this.props.queue && this.props.queue.items.length) {
             let node: Track = getTrack(this.props.queue, this.props.queueState);
-            title = node.title;
-            artist = node.artist;
-            art = getArt(this.props.queue, this.props.queueState);
+            if (node != null) {
+                title = node.title;
+                artist = node.artist;
+                art = getArt(this.props.queue, this.props.queueState);
+            }
         }
         let currentTime: string = Math.floor(this.state.current / 60) + ":" + (this.state.current % 60 < 10 ? "0" + this.state.current % 60 : this.state.current % 60);
         let durationTime: string = Math.floor(this.state.duration / 60) + ":" + (this.state.duration % 60 < 10 ? "0" + this.state.duration % 60 : this.state.duration % 60);
@@ -970,7 +972,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
             audioPlayer: new Audio(),
             audioState: PlayStatus.stop,
             collections: { albums: null, artists: null, songs: null, playlists: null },
-            viewState: ViewState.songs,
+            viewState: ViewState.queue,
             queue: emptyQueue,
             queueState: [],
             savedStates: {},
@@ -1017,7 +1019,13 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                             case ViewState.settings:
                                 break;
                             case ViewState.queue:
-                                break;
+                                return (<CurrentPlaylistView
+                                    playNode={this.playNode.bind(this) }
+                                    addNode={this.addNode.bind(this) }
+                                    queue={this.state.queue}
+                                    //queue={this.state.collections.albums}
+                                    queueState={this.state.queueState}
+                                    index={-1}/>);
                         }
                     })() }
 
@@ -1058,17 +1066,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
     }
 
     togglePlay() {
-        let state = this.state;
-        switch (state.audioState) {
-            case PlayStatus.stop:
-            case PlayStatus.pause:
-                this.playerControl(PlayerControl.play);
-                break;
-            case PlayStatus.play:
-                this.playerControl(PlayerControl.pause);
-                break;
-        }
-        this.setState(state);
+        this.playerControl(PlayerControl.toggle);
     }
 
     viewControl(view: ViewState) {
@@ -1107,6 +1105,15 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                 }
                 break;
             case PlayerControl.play:
+                if (!this.state.audioPlayer.src) {
+                    currentState = findLeftmostLeaf(this.state.queue);
+                    let track = getTrack(this.state.queue, currentState);
+                    if (isTrack(track)) {
+                        this.state.audioPlayer.src = track.uri;
+                        this.state.audioPlayer.play();
+                        this.state.audioState = PlayStatus.play;
+                    }
+                }
                 if (this.state.audioPlayer.readyState) {
                     this.state.audioPlayer.play();
                     state.audioState = PlayStatus.play;
@@ -1137,3 +1144,68 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 });
 
+
+
+
+
+
+
+
+
+class CurrentPlaylistView extends React.Component<any, any> {
+    render() {
+        return (
+            <div className="view queueView">
+                {this.props.queue ? <CurrentPlaylistEntry playlist={this.props.queue} index={-1}/> : <EmptyList/>}
+            </div>
+        );
+    }
+}
+
+class CurrentPlaylistEntry extends React.Component<any, any> {
+    render() {
+        return (
+            <div className={this.props.index == -1 ? "viewList songs queue" : "seperator queue"}>
+                { this.props.index != -1 ? <div className="index">{this.props.playlist.title}</div> : <CurrentPlaylistHead />}
+                { this.props.index != -1 ? null : <CurrentPlaylistMenu/>}
+                <div className="entries">
+                    {this.props.playlist.items.map(
+                        (item, index) => {
+                            if (isPlaylist(item)) return (<CurrentPlaylistEntry playlist={item} index={index}/>);
+                            if (isTrack(item)) return (<SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={item} id={"id" + this.props.index + "-" + index}/>);
+                            return (<EmptyList/>);
+                        }
+                    ) }
+                </div>
+            </div>
+        );
+    }
+}
+
+class CurrentPlaylistHead extends React.Component<any, any> {
+    render() {
+        return (
+            <h1 className="viewTitel">{getLocalized("queue") }</h1>
+        );
+    }
+}
+class CurrentPlaylistMenu extends React.Component<any, any> {
+    render() {
+        return (
+            <div className="viewMenu">
+                <div>{"MenuEntry A"}</div>
+                <div>{"MenuEntry B"}</div>
+                <div>{"MenuEntry C"}</div>
+                <div>{"MenuEntry D"}</div>
+            </div>
+        );
+    }
+}
+
+class EmptyList extends React.Component<any, any> {
+    render() {
+        return (
+            <div className="emptyList">{"Nothing to see here ..."}</div>
+        );
+    }
+}
