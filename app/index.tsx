@@ -1,8 +1,11 @@
 ///<reference path="../typings/index.d.ts"/>
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import * as Perf from 'react-addons-perf';
 import {ipcRenderer} from 'electron';
 import {ViewState, Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playlist, Track} from '../types';
+
+window["Perf"] = Perf;
 
 function findRightmostLeaf(node: PlaylistNode): number[] {
     let findRightmostLeaf = (node: PlaylistNode) => {
@@ -152,6 +155,9 @@ function isTrack(n: PlaylistNode): n is Track {
 }
 function isPlaylist(n: PlaylistNode): n is Playlist {
     return n.type === "playlist";
+}
+function isString(x: any): x is string {
+    return typeof x === "string";
 }
 
 interface AlbumEntryProps {
@@ -535,6 +541,7 @@ interface SongEntryProps {
     playNode: any;
     addNode: any;
     id?: string;
+    active?: string;
 }
 function formatSeconds(input: number) {
     var minutes = Math.floor(input / 60);
@@ -547,7 +554,7 @@ function formatSeconds(input: number) {
 class SongEntry extends React.Component<SongEntryProps, any> {
     render() {
         return (
-            <div className="entry">
+            <div className={"entry" + (this.props.active == "active" ? " active" : "") }>
                 <div className="selector"><input type="checkbox" id={this.props.id}/><label htmlFor={this.props.id}></label></div>
                 <div className="title">{this.props.song.title}</div>
                 <div className="controls">
@@ -1019,7 +1026,7 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
                             case ViewState.settings:
                                 break;
                             case ViewState.queue:
-                                return (<CurrentPlaylistView
+                                return (<CurrentPlaylistEntry
                                     playNode={this.playNode.bind(this) }
                                     addNode={this.addNode.bind(this) }
                                     queue={this.state.queue}
@@ -1163,19 +1170,35 @@ class CurrentPlaylistView extends React.Component<any, any> {
 }
 
 class CurrentPlaylistEntry extends React.Component<any, any> {
+
+    elementBuilder(nodes: PlaylistNode[], track: Track) {
+        return nodes.reduce((flatArray, node, index) => {
+            if (isTrack(node)) {
+                let state = "inactive";
+                if (track && node && node.title == track.title && node.artist == track.artist && node.album == track.album) {
+                    state = "active";
+                }
+                let item = [<SongEntry active={state} playNode={this.props.playNode} addNode={this.props.addNode} song={node} id={"id" + index}/>];
+                return flatArray.concat(item);
+            }
+            if (isPlaylist(node)) {
+                let item = [];
+                return flatArray.concat(
+                    [<div className={"entry title"}><div className="text">{node.title}</div></div>],
+                    this.elementBuilder(node.items, track)
+                    ,[<div className={"entry end"}></div>]
+                    );
+            }
+        }, []);
+    }
+
     render() {
         return (
-            <div className={this.props.index == -1 ? "viewList songs queue" : "seperator queue"}>
-                { this.props.index != -1 ? <div className="index">{this.props.playlist.title}</div> : <CurrentPlaylistHead />}
-                { this.props.index != -1 ? null : <CurrentPlaylistMenu/>}
-                <div className="entries">
-                    {this.props.playlist.items.map(
-                        (item, index) => {
-                            if (isPlaylist(item)) return (<CurrentPlaylistEntry playlist={item} index={index}/>);
-                            if (isTrack(item)) return (<SongEntry playNode={this.props.playNode} addNode={this.props.addNode} song={item} id={"id" + this.props.index + "-" + index}/>);
-                            return (<EmptyList/>);
-                        }
-                    ) }
+            <div className={"view queueView"}>
+                <CurrentPlaylistHead />
+                <CurrentPlaylistMenu />
+                <div className={"viewList songs queue"}>
+                    {this.elementBuilder(this.props.queue.items, getTrack(this.props.queue, this.props.queueState)) }
                 </div>
             </div>
         );
