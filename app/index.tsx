@@ -7,6 +7,16 @@ import {ViewState, Collections, PlaylistItem, PlaylistNode, PlaylistRole, Playli
 
 window["Perf"] = Perf;
 
+function arraysEqual(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 function findRightmostLeaf(node: PlaylistNode): number[] {
     let findRightmostLeaf = (node: PlaylistNode) => {
         if (!node) {
@@ -144,7 +154,7 @@ function getArt(playlist: Playlist, playlistState: number[]): any {
         return "data:image/" + node.art.format + ";base64," + node.art.data;
     }
     if (playlistState.length == 0) {
-        return "art.jpg";
+        return "album.png";
     }
     return getArt(playlist, playlistState.slice(0, playlistState.length - 1));
 }
@@ -734,7 +744,7 @@ class PlayerIndicator extends React.Component<PlayerIndicatorProps, PlayerIndica
             this.forceUpdate();
         });
         this.props.audioPlayer.addEventListener("ended", (event: any) => {
-            if (findNextTrack != findRightmostLeaf) {
+            if (arraysEqual(findNextTrack(this.props.queue,this.props.queueState),findRightmostLeaf(this.props.queue))) {
                 this.props.playerControl(PlayerControl.next);
             } else {
                 this.props.playerControl(PlayerControl.pause);
@@ -1055,17 +1065,26 @@ class MukakePlayer extends React.Component<MukakePlayerProps, MukakePlayerState>
         return this.state.savedStates[component];
     }
 
-    playNode(item: PlaylistNode) {
-        this.state.queue.items = [item];
-        this.state.queueState = [];
+    playNode(item: PlaylistNode, targetState = []) {
+        let track: Track;
+        if (isPlaylist(item) && targetState.length > 0) {
+            track = getTrack(item, targetState);
+            if (isTrack(track)) {
+                this.state.queueState = targetState;
+            }
+        } else {
+            this.state.queue.items = [item];
+            this.state.queueState = [];
 
-        this.state.queueState = findLeftmostLeaf(this.state.queue);
-        let track: Track = getTrack(this.state.queue, this.state.queueState);
+            this.state.queueState = findLeftmostLeaf(this.state.queue);
+            track = getTrack(this.state.queue, this.state.queueState);
+        }
         this.state.audioPlayer.src = track.uri;
         this.state.audioPlayer.play();
         this.state.audioState = PlayStatus.play;
         this.forceUpdate();
     }
+
     addNode(item: PlaylistNode) {
         let state = this.state;
         state.queue.items.push(item);
@@ -1171,23 +1190,23 @@ class CurrentPlaylistView extends React.Component<any, any> {
 
 class CurrentPlaylistEntry extends React.Component<any, any> {
 
-    elementBuilder(nodes: PlaylistNode[], track: Track) {
+    elementBuilder(nodes: PlaylistNode[], track: Track, initialState: number[]) {
         return nodes.reduce((flatArray, node, index) => {
             if (isTrack(node)) {
                 let state = "inactive";
                 if (track && node && node.title == track.title && node.artist == track.artist && node.album == track.album) {
                     state = "active";
                 }
-                let item = [<SongEntry active={state} playNode={this.props.playNode} addNode={this.props.addNode} song={node} id={"id" + index}/>];
+                let item = [<SongEntry active={state} playNode={() => {this.props.playNode(this.props.queue, initialState.concat(index)) } } addNode={this.props.addNode} song={node} id={"id" + index}/>];
                 return flatArray.concat(item);
             }
             if (isPlaylist(node)) {
                 let item = [];
                 return flatArray.concat(
                     [<div className={"entry title"}><div className="text">{node.title}</div></div>],
-                    this.elementBuilder(node.items, track)
-                    ,[<div className={"entry end"}></div>]
-                    );
+                    this.elementBuilder(node.items, track, initialState.concat(index))
+                    , [<div className={"entry end"}></div>,<div className={"entry end adjust"}></div>]
+                );
             }
         }, []);
     }
@@ -1198,7 +1217,7 @@ class CurrentPlaylistEntry extends React.Component<any, any> {
                 <CurrentPlaylistHead />
                 <CurrentPlaylistMenu />
                 <div className={"viewList songs queue"}>
-                    {this.elementBuilder(this.props.queue.items, getTrack(this.props.queue, this.props.queueState)) }
+                    {this.elementBuilder(this.props.queue.items, getTrack(this.props.queue, this.props.queueState), []) }
                 </div>
             </div>
         );
